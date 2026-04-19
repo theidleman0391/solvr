@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SOLVR. — Workflow Engineering</title>
+<meta name="description" content="Workflow Engineering by SOLVR — end-to-end pipelines that connect your tools so data moves itself.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700;800;900&family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bone:#F9F8F0;--ink:#100F0E;--red:#D33C2D;--red-dark:#a82e22;
+  --grey:#9A9893;--tan:#A48466;--line:#100F0E;--line-soft:rgba(16,15,14,.12);--ink-dim:#4a4845;--cream:#efecd9;
+  --display:'Bebas Neue','Archivo',sans-serif;--brand:'Bebas Neue','Archivo Black',sans-serif;
+  --sans:'Archivo',system-ui,sans-serif;--serif:'Instrument Serif',Georgia,serif;--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bone);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;scroll-behavior:smooth}
+::selection{background:var(--red);color:var(--bone)}
+
+/* PAPER TEXTURE */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1000;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0.063  0 0 0 0 0.059  0 0 0 0 0.055  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.45'/></svg>");opacity:.35;mix-blend-mode:multiply}
+
+/* TICKER */
+.ticker-bar{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--ink);color:var(--bone);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:8px 0;overflow:hidden}
+.ticker-track{display:flex;gap:52px;white-space:nowrap;animation:tick 60s linear infinite;width:max-content}
+.ticker-track span{display:inline-flex;align-items:center;gap:14px}
+.ticker-track span::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* NAV */
+nav{position:fixed;top:34px;left:0;right:0;z-index:90;display:flex;justify-content:space-between;align-items:center;padding:18px 40px;background:rgba(249,248,240,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.logo{font-family:var(--brand);font-size:38px;letter-spacing:-.01em;display:inline-flex;align-items:baseline;line-height:.85;font-weight:400;text-decoration:none;color:var(--ink)}
+.logo .dot{display:inline-block;width:9px;height:9px;background:var(--red);margin-left:4px;transform:translateY(-1px)}
+.nav-links{display:flex;gap:36px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+.nav-links a{color:var(--ink);text-decoration:none;position:relative;padding:6px 0;transition:color .2s}
+.nav-links a:hover{color:var(--red)}
+.nav-links a .num{color:var(--grey);margin-right:8px;font-size:10px}
+.nav-cta{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;background:var(--ink);color:var(--bone);border:none;padding:12px 20px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .2s;font-weight:500;text-decoration:none}
+.nav-cta:hover{background:var(--red);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.nav-cta .sq{display:inline-block;width:6px;height:6px;background:var(--red)}
+.lang-btn{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;background:transparent;color:var(--ink);border:1.5px solid var(--ink);padding:8px 14px;cursor:pointer;transition:all .2s;font-weight:600;margin-left:12px;line-height:1}
+.lang-btn:hover{background:var(--ink);color:var(--bone)}
+
+/* HERO */
+.svc-hero{padding:clamp(120px,14vh,160px) clamp(20px,3vw,48px) 64px;border-bottom:2px solid var(--ink);position:relative;overflow:hidden}
+.svc-hero::after{content:"01";position:absolute;right:-20px;bottom:-60px;font-family:var(--display);font-size:clamp(280px,30vw,500px);color:rgba(16,15,14,.04);line-height:.8;pointer-events:none;font-weight:400;letter-spacing:-.02em}
+.breadcrumb{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:40px;display:flex;align-items:center;gap:12px}
+.breadcrumb a{color:var(--ink-dim);text-decoration:none;transition:color .2s}
+.breadcrumb a:hover{color:var(--red)}
+.breadcrumb .sep{color:var(--red)}
+.svc-label{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--red);text-transform:uppercase;margin-bottom:24px;display:inline-flex;align-items:center;gap:10px}
+.svc-label::before{content:"";display:inline-block;width:8px;height:8px;background:var(--red)}
+.svc-hero h1{font-family:var(--display);font-weight:400;font-size:clamp(64px,10vw,160px);line-height:.9;text-transform:uppercase;letter-spacing:-.015em;margin-bottom:28px;max-width:18ch}
+.svc-hero h1 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em;color:var(--red)}
+.svc-hero h1 .red{color:var(--red)}
+.svc-subtitle{font-family:var(--serif);font-size:clamp(20px,2.2vw,30px);line-height:1.35;color:var(--ink-dim);max-width:720px}
+.svc-subtitle em{color:var(--red);font-style:italic}
+
+/* ANIM CANVAS */
+.svc-anim{padding:80px clamp(20px,3vw,48px);background:var(--cream);border-bottom:2px solid var(--ink);display:flex;justify-content:center;align-items:center}
+.svc-anim svg{width:100%;max-width:920px;height:auto}
+.flow-node{fill:var(--bone);stroke:var(--ink);stroke-width:1.5}
+.flow-node.accent{fill:var(--red);stroke:var(--red)}
+.flow-label{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;fill:var(--ink-dim)}
+.flow-pulse{stroke:var(--red);stroke-width:2;fill:none;stroke-dasharray:6 8;animation:flowDash 2.4s linear infinite}
+@keyframes flowDash{to{stroke-dashoffset:-56}}
+.flow-dot{fill:var(--red);animation:flowBlink 1.8s ease-in-out infinite}
+.flow-dot.d2{animation-delay:.3s}
+.flow-dot.d3{animation-delay:.6s}
+.flow-dot.d4{animation-delay:.9s}
+@keyframes flowBlink{0%,100%{opacity:.25}50%{opacity:1}}
+.flow-packet{fill:var(--red)}
+@keyframes pkt1{0%{transform:translate(140px,90px)}50%{transform:translate(400px,90px)}100%{transform:translate(400px,200px)}}
+@keyframes pkt2{0%{transform:translate(400px,200px)}50%{transform:translate(140px,310px)}100%{transform:translate(680px,310px)}}
+.packet-a{animation:pkt1 4s cubic-bezier(.65,0,.35,1) infinite}
+.packet-b{animation:pkt2 4s cubic-bezier(.65,0,.35,1) infinite;animation-delay:-2s}
+
+/* BODY SECTIONS */
+.svc-body{padding:100px clamp(20px,3vw,48px);max-width:1280px;margin:0 auto}
+.section-head{display:grid;grid-template-columns:200px 1fr;gap:48px;align-items:baseline;margin-bottom:56px}
+.section-head .index{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--red);text-transform:uppercase}
+.section-head h2{font-family:var(--display);font-weight:400;font-size:clamp(44px,6vw,84px);line-height:.92;text-transform:uppercase;letter-spacing:-.01em}
+.section-head h2 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;color:var(--red)}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.step{padding:44px 36px;border-right:1px solid var(--line-soft);position:relative}
+.step:last-child{border-right:none}
+.step-num{font-family:var(--mono);font-size:10px;letter-spacing:.24em;color:var(--red);text-transform:uppercase;margin-bottom:24px}
+.step h3{font-family:var(--display);font-size:40px;line-height:.95;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:18px;font-weight:400}
+.step h3 .serif{font-family:var(--serif);font-style:italic;color:var(--red);text-transform:none}
+.step p{color:var(--ink-dim);font-size:15px;line-height:1.65}
+
+.benefits{margin-top:100px;display:grid;grid-template-columns:200px 1fr;gap:48px;align-items:start}
+.benefits .index{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--red);text-transform:uppercase;padding-top:6px}
+.benefits-list{display:grid;grid-template-columns:1fr 1fr;gap:32px 48px}
+.benefit{padding:20px 0;border-top:1px solid var(--line-soft)}
+.benefit h4{font-family:var(--display);font-size:28px;line-height:1;text-transform:uppercase;letter-spacing:-.005em;font-weight:400;margin-bottom:10px}
+.benefit h4 .serif{font-family:var(--serif);font-style:italic;color:var(--red);text-transform:none}
+.benefit p{color:var(--ink-dim);font-size:14px;line-height:1.6}
+
+.stack-strip{margin-top:80px;padding:32px 0;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.stack-strip .label{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);margin-right:18px}
+.stack-strip span.chip{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--line);background:var(--bone)}
+
+/* CTA */
+.cta{padding:clamp(90px,13vh,140px) clamp(24px,4vw,48px);text-align:center;background:var(--ink);color:var(--bone);border-bottom:2px solid var(--ink);position:relative;overflow:hidden}
+.cta::before{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:700px;height:700px;border:1px solid rgba(249,248,240,.05);border-radius:50%;pointer-events:none}
+.cta-pre{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--red);text-transform:uppercase;margin-bottom:36px;display:inline-flex;align-items:center;gap:10px;position:relative;z-index:1}
+.cta-pre::before{content:"";display:inline-block;width:8px;height:8px;background:var(--red);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.2}}
+.cta h2{font-family:var(--display);font-weight:400;font-size:clamp(60px,10vw,140px);line-height:.9;letter-spacing:-.005em;text-transform:uppercase;position:relative;z-index:1}
+.cta h2 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;color:var(--red);letter-spacing:-.02em}
+.cta p{margin:36px auto 0;max-width:540px;color:var(--grey);font-size:15px;line-height:1.7;position:relative;z-index:1}
+.cta-actions{margin-top:56px;display:flex;gap:16px;justify-content:center;align-items:center;flex-wrap:wrap;position:relative;z-index:1}
+.cta-btn-primary,.cta-btn-ghost{padding:20px 32px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;display:inline-flex;align-items:center;gap:12px;font-weight:500;transition:all .25s}
+.cta-btn-primary{background:var(--bone);color:var(--ink);border:1px solid var(--bone)}
+.cta-btn-primary:hover{background:var(--red);color:var(--bone);border-color:var(--red);transform:translate(-3px,-3px);box-shadow:6px 6px 0 var(--bone)}
+.cta-btn-ghost{background:transparent;color:var(--bone);border:1px solid rgba(249,248,240,.3)}
+.cta-btn-ghost:hover{border-color:var(--bone);background:rgba(249,248,240,.08)}
+
+/* FOOTER */
+footer{padding:18px 40px;display:flex;justify-content:space-between;align-items:center;gap:24px;background:var(--bone);border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.footer-brand{font-family:var(--brand);font-size:28px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;display:inline-flex;align-items:baseline;font-weight:400}
+.footer-brand .dot{display:inline-block;width:7px;height:7px;background:var(--red);margin-left:3px;transform:translateY(-1px)}
+.footer-contact{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap}
+.footer-contact a{color:var(--ink);text-decoration:none;transition:color .2s}
+.footer-contact a:hover{color:var(--red)}
+.footer-contact .sep{opacity:.4}
+.footer-bottom{padding:10px 40px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--ink-dim);text-transform:uppercase;background:var(--bone)}
+
+@media(max-width:900px){
+  nav{padding:12px 18px;top:28px}
+  .logo{font-size:28px}
+  .nav-links{display:none}
+  .nav-cta{padding:9px 14px;font-size:10px}
+  .svc-hero{padding:104px 20px 48px}
+  .svc-hero h1{font-size:clamp(54px,11vw,86px)}
+  .svc-anim{padding:56px 20px}
+  .svc-body{padding:64px 20px}
+  .section-head{grid-template-columns:1fr;gap:16px;margin-bottom:40px}
+  .steps{grid-template-columns:1fr;border-right:none}
+  .step{border-right:none;border-bottom:1px solid var(--line-soft)}
+  .step:last-child{border-bottom:none}
+  .benefits{grid-template-columns:1fr;gap:16px}
+  .benefits-list{grid-template-columns:1fr}
+  .cta h2{font-size:clamp(54px,13vw,92px)}
+  footer{padding:14px 20px;gap:12px;justify-content:center;text-align:center}
+  .footer-brand{font-size:22px}
+  .footer-contact{font-size:10px;gap:10px;justify-content:center}
+  .footer-bottom{gap:8px;padding:10px 20px;font-size:9px;justify-content:center}
+}
+@media(max-width:480px){
+  .svc-hero h1{font-size:clamp(44px,13vw,64px)}
+  .step h3{font-size:32px}
+  footer{gap:10px;padding:12px 16px}
+  .footer-brand{font-size:20px}
+}
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker-bar">
+  <div class="ticker-track">
+    <span data-es="Servicio 001">Service 001</span><span data-es="Ingeniería de Flujos">Workflow Engineering</span><span data-es="Pipelines de punta a punta">End-to-end pipelines</span><span data-es="Tu stack, conectado">Your stack, connected</span><span>n8n · Make · Temporal · Python</span>
+    <span data-es="Servicio 001">Service 001</span><span data-es="Ingeniería de Flujos">Workflow Engineering</span><span data-es="Pipelines de punta a punta">End-to-end pipelines</span><span data-es="Tu stack, conectado">Your stack, connected</span><span>n8n · Make · Temporal · Python</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="logo">SOLVR<span class="dot"></span></a>
+  <div class="nav-links">
+    <a href="index.html#work" data-es="<span class='num'>01</span>Trabajo"><span class="num">01</span>Work</a>
+    <a href="index.html#services" data-es="<span class='num'>02</span>Servicios"><span class="num">02</span>Services</a>
+    <a href="index.html#process" data-es="<span class='num'>03</span>Proceso"><span class="num">03</span>Process</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:0">
+    <a href="index.html#contact" class="nav-cta" data-es="<span class='sq'></span> Iniciar Proyecto <span>→</span>"><span class="sq"></span> Start a Project <span>→</span></a>
+    <button class="lang-btn" id="langToggle" aria-label="Cambiar a Español">ES</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="svc-hero">
+  <div class="breadcrumb">
+    <a href="index.html">SOLVR.</a>
+    <span class="sep">→</span>
+    <a href="index.html#services" data-es="Servicios">Services</a>
+    <span class="sep">→</span>
+    <span data-es="Servicio 001">Service 001</span>
+  </div>
+  <div class="svc-label" data-es="Servicio 001 — Ingeniería de Flujos">Service 001 — Workflow Engineering</div>
+  <h1 data-es="Tus herramientas<br>hablando <span class='serif'>entre sí</span><span class='red'>.</span>">Your tools<br><span class="serif">talking</span> to each other<span class="red">.</span></h1>
+  <div class="svc-subtitle" data-es="Conectamos las apps que ya usas — CRM, facturación, soporte, email, base de datos — para que <em>la información viaje sola</em>, sin que nadie la copie y pegue de un lado a otro.">We connect the apps you already use — CRM, billing, support, email, database — so <em>information moves by itself</em>, with no one copy-pasting it between screens.</div>
+</section>
+
+<!-- ANIMATION -->
+<div class="svc-anim" aria-hidden="true">
+  <svg viewBox="0 0 820 400" xmlns="http://www.w3.org/2000/svg">
+    <!-- Node 1: CRM -->
+    <rect class="flow-node" x="60" y="60" width="160" height="70" rx="2"/>
+    <text class="flow-label" x="140" y="100" text-anchor="middle">CRM</text>
+    <circle class="flow-dot" cx="80" cy="80" r="4"/>
+
+    <!-- Node 2: Billing -->
+    <rect class="flow-node accent" x="320" y="60" width="160" height="70" rx="2"/>
+    <text class="flow-label" x="400" y="100" text-anchor="middle" fill="#F9F8F0">Billing</text>
+    <circle class="flow-dot d2" cx="340" cy="80" r="4" fill="#F9F8F0"/>
+
+    <!-- Node 3: Support -->
+    <rect class="flow-node" x="600" y="60" width="160" height="70" rx="2"/>
+    <text class="flow-label" x="680" y="100" text-anchor="middle">Support</text>
+    <circle class="flow-dot d3" cx="620" cy="80" r="4"/>
+
+    <!-- Middle: Solvr pipeline -->
+    <rect class="flow-node" x="260" y="190" width="300" height="50" rx="2" stroke-dasharray="4 4"/>
+    <text class="flow-label" x="410" y="222" text-anchor="middle" data-es="Pipeline SOLVR">SOLVR Pipeline</text>
+
+    <!-- Bottom nodes -->
+    <rect class="flow-node" x="60" y="300" width="160" height="70" rx="2"/>
+    <text class="flow-label" x="140" y="340" text-anchor="middle">Email</text>
+    <circle class="flow-dot d4" cx="80" cy="320" r="4"/>
+
+    <rect class="flow-node" x="320" y="300" width="160" height="70" rx="2"/>
+    <text class="flow-label" x="400" y="340" text-anchor="middle">Warehouse</text>
+
+    <rect class="flow-node" x="600" y="300" width="160" height="70" rx="2"/>
+    <text class="flow-label" x="680" y="340" text-anchor="middle">Slack</text>
+
+    <!-- Connecting pulse lines -->
+    <path class="flow-pulse" d="M 140 130 L 140 190 L 410 190 L 410 190"/>
+    <path class="flow-pulse" d="M 400 130 L 400 190"/>
+    <path class="flow-pulse" d="M 680 130 L 680 190 L 410 190"/>
+    <path class="flow-pulse" d="M 410 240 L 140 300"/>
+    <path class="flow-pulse" d="M 410 240 L 400 300"/>
+    <path class="flow-pulse" d="M 410 240 L 680 300"/>
+
+    <!-- Moving packets -->
+    <rect class="flow-packet packet-a" width="10" height="10" x="-5" y="-5"/>
+    <rect class="flow-packet packet-b" width="10" height="10" x="-5" y="-5"/>
+  </svg>
+</div>
+
+<!-- BODY -->
+<section class="svc-body">
+  <div class="section-head">
+    <span class="index" data-es="§ Cómo funciona">§ How it works</span>
+    <h2 data-es="Tres <span class='serif'>pasos</span>, sin drama.">Three <span class="serif">steps</span>, no drama.</h2>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01 / <span data-es="Mapeamos">We map</span></div>
+      <h3 data-es="<span class='serif'>Escuchamos</span> tu operación.">We <span class="serif">listen</span> to your ops.</h3>
+      <p data-es="Sentados contigo una tarde. Anotamos cada clic, cada exportación, cada traspaso manual. Salimos con un mapa de dónde se pierde el tiempo.">A short working session with you. We note every click, every export, every manual handoff. We leave with a map of where time is leaking.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02 / <span data-es="Construimos">We build</span></div>
+      <h3 data-es="Un <span class='serif'>pipeline</span> silencioso.">A silent <span class="serif">pipeline</span>.</h3>
+      <p data-es="Conectamos las apps con un flujo que corre solo. Si el CRM cambia algo, facturación se entera. Si un cliente escribe, el ticket llega al canal correcto. Sin planillas intermedias.">We connect the apps with a flow that runs itself. When the CRM changes, billing knows. When a customer writes, the ticket lands in the right channel. No spreadsheets in between.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03 / <span data-es="Cuidamos">We watch</span></div>
+      <h3 data-es="Que <span class='serif'>no se rompa</span>.">So it <span class="serif">won't break</span>.</h3>
+      <p data-es="Monitoreo, alertas y documentación. Si algo falla a las 3am, te enteras antes que tu cliente. Y si tu equipo quiere cambiar el flujo en seis meses, cualquiera lo entiende.">Monitoring, alerts, and documentation. If anything fails at 3am, you know before your customer. And if your team wants to change the flow in six months, anyone can read it.</p>
+    </div>
+  </div>
+
+  <div class="benefits">
+    <span class="index" data-es="§ Qué recibes">§ What you get</span>
+    <div class="benefits-list">
+      <div class="benefit">
+        <h4 data-es="Horas <span class='serif'>recuperadas</span>">Hours <span class="serif">reclaimed</span></h4>
+        <p data-es="El trabajo repetitivo deja de existir. Tu equipo vuelve al trabajo que importa.">The repetitive work stops existing. Your team returns to work that matters.</p>
+      </div>
+      <div class="benefit">
+        <h4 data-es="Cero <span class='serif'>copiar-pegar</span>">Zero <span class="serif">copy-paste</span></h4>
+        <p data-es="La información fluye sola entre sistemas. No más errores de tipeo ni duplicados.">Information flows between systems by itself. No more typos or duplicates.</p>
+      </div>
+      <div class="benefit">
+        <h4 data-es="Visibilidad <span class='serif'>real</span>">Real <span class="serif">visibility</span></h4>
+        <p data-es="Un panel que muestra qué corrió, qué falló y qué sigue. Sin abrir seis pestañas.">One panel shows what ran, what failed, what's next. No opening six tabs.</p>
+      </div>
+      <div class="benefit">
+        <h4 data-es="Documentación <span class='serif'>viva</span>">Living <span class="serif">docs</span></h4>
+        <p data-es="Diagramas y runbooks que tu equipo puede leer y cambiar, sin depender de nosotros.">Diagrams and runbooks your team can read and change, without depending on us.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack-strip">
+    <span class="label" data-es="◉ Herramientas">◉ Tools</span>
+    <span class="chip">n8n</span><span class="chip">Zapier</span><span class="chip">Make</span><span class="chip">Temporal</span><span class="chip">Python</span><span class="chip">Node</span><span class="chip">Postgres</span><span class="chip">Webhooks</span>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta" id="contact">
+  <div class="cta-pre" data-es="Reservando ahora — Q3 / 2026">Now booking — Q3 / 2026</div>
+  <h2 data-es="Hablemos del <span class='serif'>trabajo</span> que se repite.">Let's talk about <span class="serif">work</span> that repeats.</h2>
+  <p data-es="Una llamada corta. Cuéntanos el flujo que más te duele — respondemos si podemos ayudar.">One short call. Tell us the flow that hurts most — we reply if we can help.</p>
+  <div class="cta-actions">
+    <a href="mailto:contact@solvr.cloud" class="cta-btn-primary">contact@solvr.cloud <span>→</span></a>
+    <a href="https://wa.me/527701116041" target="_blank" rel="noopener" class="cta-btn-ghost" data-es="Cuéntanos sobre tu proyecto <span>→</span>">Tell us about your project <span>→</span></a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">SOLVR<span class="dot"></span></div>
+  <div class="footer-contact">
+    <a href="mailto:contact@solvr.cloud">contact@solvr.cloud</a>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/company/solvr" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <span data-es="Ciudad de México">Mexico City</span>
+  </div>
+</footer>
+<div class="footer-bottom">
+  <span data-es="© 2026 SOLVR.">© 2026 SOLVR.</span>
+</div>
+
+<script src="anim.js"></script>
+<script src="lang.js"></script>
+</body>
+</html>
