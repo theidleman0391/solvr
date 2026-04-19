@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SOLVR. — Case Study 02 · AMG Abogados</title>
+<meta name="description" content="How SOLVR built an AI agent that triages 200 client emails a day for AMG Abogados — with 96.4% accuracy and 4.2 minute median response time.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700;800;900&family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bone:#F9F8F0;--ink:#100F0E;--red:#D33C2D;--red-dark:#a82e22;
+  --grey:#9A9893;--tan:#A48466;--tan-light:#c9b39a;
+  --line:#100F0E;--line-soft:rgba(16,15,14,.12);--ink-dim:#4a4845;
+  --cream:#efecd9;
+  --display:'Bebas Neue','Archivo',sans-serif;
+  --brand:'Bebas Neue','Archivo Black',sans-serif;
+  --sans:'Archivo',system-ui,sans-serif;
+  --serif:'Instrument Serif',Georgia,serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bone);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;scroll-behavior:smooth}
+::selection{background:var(--red);color:var(--bone)}
+
+/* CURSOR */
+@media(hover:hover)and(pointer:fine){html,body,a,button,*{cursor:none!important}}
+.cursor-ring{position:fixed;top:0;left:0;width:36px;height:36px;border:1.5px solid var(--ink);border-radius:50%;pointer-events:none;z-index:10000;will-change:transform;transition:width .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1),border-color .2s,background-color .2s,opacity .2s;mix-blend-mode:difference;background:transparent}
+.cursor-ring::before,.cursor-ring::after{content:"";position:absolute;background:var(--bone);transition:all .25s}
+.cursor-ring::before{top:50%;left:-6px;right:-6px;height:1px;transform:translateY(-50%)}
+.cursor-ring::after{left:50%;top:-6px;bottom:-6px;width:1px;transform:translateX(-50%)}
+.cursor-dot{position:fixed;top:0;left:0;width:6px;height:6px;background:var(--red);border-radius:0;pointer-events:none;z-index:10001;will-change:transform;transition:width .18s,height .18s,background-color .18s,opacity .2s}
+.cursor-ring.is-hover{width:88px;height:88px;border-color:var(--red);border-width:1.5px;mix-blend-mode:normal;background:rgba(211,60,45,.06)}
+.cursor-ring.is-hover::before,.cursor-ring.is-hover::after{background:var(--red)}
+.cursor-ring.is-hover::before{left:-12px;right:-12px}
+.cursor-ring.is-hover::after{top:-12px;bottom:-12px}
+.cursor-dot.is-hover{width:0;height:0;opacity:0}
+.cursor-ring.is-click{width:20px;height:20px;border-color:var(--red);mix-blend-mode:normal}
+.cursor-label{position:absolute;top:100%;left:50%;transform:translateX(-50%)translateY(16px);font-family:var(--mono);font-size:9px;letter-spacing:.22em;color:var(--red);text-transform:uppercase;white-space:nowrap;opacity:0;transition:opacity .25s;font-weight:500;padding:3px 8px;background:var(--bone);border:1px solid var(--red)}
+.cursor-ring.is-hover .cursor-label{opacity:1;transition-delay:.05s}
+@media(hover:none),(pointer:coarse){.cursor-ring,.cursor-dot{display:none}html,body,*{cursor:auto!important}}
+
+/* PAPER TEXTURE */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1000;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0.063  0 0 0 0 0.059  0 0 0 0 0.055  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.45'/></svg>");opacity:.35;mix-blend-mode:multiply}
+
+/* TICKER */
+.ticker-bar{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--ink);color:var(--bone);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:8px 0;overflow:hidden}
+.ticker-track{display:flex;gap:52px;white-space:nowrap;animation:tick 60s linear infinite;width:max-content}
+.ticker-track span{display:inline-flex;align-items:center;gap:14px}
+.ticker-track span::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* NAV */
+nav{position:fixed;top:34px;left:0;right:0;z-index:90;display:flex;justify-content:space-between;align-items:center;padding:18px 40px;background:rgba(249,248,240,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.logo{font-family:var(--brand);font-size:38px;letter-spacing:-.01em;display:inline-flex;align-items:baseline;line-height:.85;font-weight:400;text-decoration:none;color:var(--ink)}
+.logo .dot{display:inline-block;width:9px;height:9px;background:var(--red);margin-left:4px;transform:translateY(-1px)}
+.nav-links{display:flex;gap:36px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+.nav-links a{color:var(--ink);text-decoration:none;position:relative;padding:6px 0;transition:color .2s}
+.nav-links a:hover{color:var(--red)}
+.nav-links a .num{color:var(--grey);margin-right:8px;font-size:10px}
+.nav-cta{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;background:var(--ink);color:var(--bone);border:none;padding:12px 20px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .2s;font-weight:500;text-decoration:none}
+.nav-cta:hover{background:var(--red);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.nav-cta .sq{display:inline-block;width:6px;height:6px;background:var(--red)}
+.nav-cta:hover .sq{background:var(--bone)}
+
+/* CASE HERO */
+.case-hero{padding:clamp(120px,14vh,160px) clamp(20px,3vw,48px) 80px;border-bottom:2px solid var(--ink);position:relative;overflow:hidden}
+.case-hero::after{content:"02";position:absolute;right:-20px;bottom:-60px;font-family:var(--display);font-size:clamp(280px,30vw,500px);color:rgba(16,15,14,.04);line-height:.8;pointer-events:none;font-weight:400;letter-spacing:-.02em}
+.case-breadcrumb{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:48px;display:flex;align-items:center;gap:12px}
+.case-breadcrumb a{color:var(--ink-dim);text-decoration:none;transition:color .2s}
+.case-breadcrumb a:hover{color:var(--red)}
+.case-breadcrumb .sep{color:var(--red)}
+.case-hero-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:64px;align-items:end}
+.case-hero-title h1{font-family:var(--display);font-weight:400;font-size:clamp(56px,8vw,130px);line-height:.92;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:24px}
+.case-hero-title h1 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em}
+.case-hero-title h1 .red{color:var(--red)}
+.case-hero-subtitle{font-family:var(--serif);font-size:clamp(18px,2vw,26px);line-height:1.35;color:var(--ink-dim);max-width:600px}
+.case-hero-subtitle em{color:var(--red);font-weight:400}
+.case-hero-meta{display:flex;flex-direction:column;gap:20px}
+.case-hero-meta .meta-item{padding-bottom:16px;border-bottom:1px solid var(--line-soft)}
+.case-hero-meta .meta-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.case-hero-meta .meta-label::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+.case-hero-meta .meta-value{font-family:var(--display);font-weight:400;font-size:28px;letter-spacing:-.005em;text-transform:uppercase;line-height:1}
+.case-hero-meta .meta-value .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none}
+
+/* STATS BAND */
+.case-stats{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid var(--ink);background:var(--ink);color:var(--bone)}
+.case-stat{padding:48px 36px;border-right:1px solid rgba(249,248,240,.08);text-align:center}
+.case-stat:last-child{border-right:none}
+.case-stat-num{font-family:var(--display);font-weight:400;font-size:clamp(56px,6vw,88px);line-height:.9;margin-bottom:8px;letter-spacing:-.01em}
+.case-stat-num .red{color:var(--red)}
+.case-stat-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--grey)}
+
+/* CASE BODY */
+.case-body{max-width:920px;margin:0 auto;padding:100px clamp(20px,3vw,48px)}
+.case-body h2{font-family:var(--display);font-weight:400;font-size:clamp(40px,5vw,72px);line-height:.92;text-transform:uppercase;letter-spacing:-.005em;margin-bottom:32px}
+.case-body h2 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em}
+.case-body h2 .red{color:var(--red)}
+.case-body h3{font-family:var(--display);font-weight:400;font-size:clamp(24px,3vw,36px);line-height:.95;text-transform:uppercase;margin-bottom:20px;margin-top:56px;letter-spacing:-.005em}
+.case-body h3 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none}
+.case-body p{font-size:16px;line-height:1.75;color:var(--ink-dim);margin-bottom:24px;max-width:720px}
+.case-body p strong{color:var(--ink);font-weight:600}
+.case-body p em{color:var(--red);font-style:normal;font-weight:500}
+.case-section{padding-bottom:80px;margin-bottom:80px;border-bottom:1px solid var(--line-soft)}
+.case-section:last-child{border-bottom:none;margin-bottom:0}
+
+/* QUOTE BLOCK */
+.case-quote{border-left:4px solid var(--red);padding:32px 0 32px 36px;margin:48px 0}
+.case-quote blockquote{font-family:var(--serif);font-size:clamp(22px,2.4vw,32px);line-height:1.3;font-weight:400}
+.case-quote blockquote em{color:var(--red);font-style:italic}
+.case-quote .quote-author{margin-top:20px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+
+/* STACK LIST */
+.stack-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:36px 0 48px}
+.stack-card{border:1px solid var(--ink);padding:24px;position:relative;transition:all .3s;cursor:default}
+.stack-card:hover{background:var(--cream);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.stack-card .stack-name{font-family:var(--display);font-weight:400;font-size:28px;text-transform:uppercase;line-height:1;margin-bottom:8px;letter-spacing:-.005em}
+.stack-card .stack-role{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+
+/* FLOW DIAGRAM */
+.flow-diagram{margin:48px 0;padding:36px;border:1px solid var(--ink);background:var(--cream);position:relative}
+.flow-diagram-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.flow-diagram-label::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+.flow-steps{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.flow-step{padding:16px 20px;background:var(--bone);border:1px solid var(--ink);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-align:center;min-width:120px}
+.flow-step.active{background:var(--ink);color:var(--bone)}
+.flow-step.highlight{background:var(--red);color:var(--bone);border-color:var(--red)}
+.flow-arrow{font-family:var(--display);font-size:24px;color:var(--red);padding:0 8px;flex-shrink:0}
+
+/* METRICS TABLE */
+.metrics-table{width:100%;border-collapse:collapse;margin:36px 0}
+.metrics-table th,.metrics-table td{text-align:left;padding:14px 20px;border-bottom:1px solid var(--line-soft)}
+.metrics-table th{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);font-weight:500}
+.metrics-table td{font-size:15px;color:var(--ink-dim)}
+.metrics-table td strong{color:var(--ink);font-weight:600}
+.metrics-table td .red{color:var(--red);font-weight:600}
+.metrics-table tr:hover td{background:var(--cream)}
+
+/* TIMELINE */
+.timeline{margin:48px 0;position:relative}
+.timeline::before{content:"";position:absolute;left:20px;top:0;bottom:0;width:1px;background:var(--line-soft)}
+.timeline-item{padding-left:56px;margin-bottom:36px;position:relative}
+.timeline-item::before{content:"";position:absolute;left:14px;top:6px;width:13px;height:13px;border:2px solid var(--red);background:var(--bone)}
+.timeline-item:last-child::before{background:var(--red)}
+.timeline-week{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--red);margin-bottom:6px;font-weight:500}
+.timeline-desc{font-size:15px;line-height:1.65;color:var(--ink-dim)}
+.timeline-desc strong{color:var(--ink);font-weight:600}
+
+/* BEFORE / AFTER */
+.before-after{display:grid;grid-template-columns:1fr auto 1fr;gap:0;margin:48px 0;border:1px solid var(--ink)}
+.ba-col{padding:32px}
+.ba-col.before{background:var(--cream)}
+.ba-col.after{background:var(--ink);color:var(--bone)}
+.ba-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.ba-label::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+.ba-col.before .ba-label{color:var(--ink-dim)}
+.ba-col.after .ba-label{color:var(--grey)}
+.ba-list{list-style:none}
+.ba-list li{font-size:14px;line-height:1.7;padding:6px 0;border-bottom:1px solid var(--line-soft);display:flex;align-items:baseline;gap:10px}
+.ba-col.after .ba-list li{border-color:rgba(249,248,240,.08)}
+.ba-list li::before{content:"×";font-family:var(--mono);font-size:12px;color:var(--red);flex-shrink:0}
+.ba-col.after .ba-list li::before{content:"✓";color:var(--red)}
+.ba-divider{width:48px;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:28px;color:var(--bone);writing-mode:vertical-lr}
+
+/* NEXT CASE NAV */
+.case-nav{border-top:2px solid var(--ink);display:grid;grid-template-columns:1fr 1fr}
+.case-nav-item{padding:80px 48px;display:flex;flex-direction:column;gap:12px;transition:background .35s;cursor:pointer;text-decoration:none;color:var(--ink)}
+.case-nav-item:first-child{border-right:1px solid var(--line-soft)}
+.case-nav-item:hover{background:var(--cream)}
+.case-nav-label{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);display:flex;align-items:center;gap:8px}
+.case-nav-title{font-family:var(--display);font-weight:400;font-size:clamp(24px,3.5vw,48px);text-transform:uppercase;line-height:.92;letter-spacing:-.005em}
+.case-nav-title .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em;color:var(--red)}
+.case-nav-arrow{font-size:32px;color:var(--red);transition:transform .3s}
+.case-nav-item:hover .case-nav-arrow{transform:translateX(8px)}
+.case-nav-item:first-child:hover .case-nav-arrow{transform:translateX(-8px)}
+
+/* FOOTER */
+footer{padding:18px 40px;display:flex;justify-content:space-between;align-items:center;gap:24px;background:var(--bone);border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.footer-brand{font-family:var(--brand);font-size:28px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;display:inline-flex;align-items:baseline;font-weight:400}
+.footer-brand .dot{display:inline-block;width:7px;height:7px;background:var(--red);margin-left:3px;transform:translateY(-1px)}
+.footer-contact{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap}
+.footer-contact a{color:var(--ink);text-decoration:none;transition:color .2s}
+.footer-contact a:hover{color:var(--red)}
+.footer-contact .sep{opacity:.4}
+.footer-bottom{padding:10px 40px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--ink-dim);text-transform:uppercase;background:var(--bone)}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  nav{padding:12px 18px;top:28px}
+  .logo{font-size:28px}
+  .nav-links{display:none}
+  .nav-cta{padding:9px 14px;font-size:10px}
+  .case-hero{padding:104px 20px 48px}
+  .case-hero-grid{grid-template-columns:1fr;gap:32px}
+  .case-hero-title h1{font-size:clamp(52px,11vw,84px)}
+  .case-hero-meta{flex-direction:row;flex-wrap:wrap;gap:16px}
+  .case-hero-meta .meta-item{flex:1;min-width:140px}
+  .case-stats{grid-template-columns:repeat(2,1fr)}
+  .case-stat{border-bottom:1px solid rgba(249,248,240,.08)}
+  .case-body{padding:60px 20px}
+  .stack-grid{grid-template-columns:1fr}
+  .before-after{grid-template-columns:1fr}
+  .ba-divider{width:100%;height:40px;writing-mode:horizontal-tb}
+  .flow-steps{flex-direction:column;align-items:stretch}
+  .flow-arrow{transform:rotate(90deg);text-align:center;padding:4px 0}
+  .case-nav{grid-template-columns:1fr}
+  .case-nav-item:first-child{border-right:none;border-bottom:1px solid var(--line-soft)}
+  .case-nav-item{padding:48px 20px}
+  footer{padding:14px 20px;gap:12px;justify-content:center;text-align:center}
+  .footer-brand{font-size:22px}
+  .footer-contact{font-size:10px;gap:10px;justify-content:center}
+  .footer-bottom{gap:8px;padding:10px 20px;font-size:9px;text-align:center;justify-content:center}
+}
+@media(max-width:480px){
+  .case-hero{padding:92px 16px 36px}
+  .case-hero-title h1{font-size:clamp(44px,13vw,64px)}
+  .case-stats{grid-template-columns:1fr}
+  .case-stat{padding:32px 24px}
+  .case-body h2{font-size:clamp(32px,8vw,48px)}
+  .stack-grid{grid-template-columns:1fr}
+  .metrics-table{font-size:12px}
+  .metrics-table th,.metrics-table td{padding:10px 12px}
+  footer{gap:10px;padding:12px 16px}
+  .footer-brand{font-size:20px}
+  .footer-contact{font-size:9.5px;gap:8px}
+}
+
+/* LANG TOGGLE */
+.lang-btn{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;background:transparent;color:var(--ink);border:1.5px solid var(--ink);padding:8px 14px;cursor:pointer;transition:all .2s;font-weight:600;margin-left:12px;line-height:1}
+.lang-btn:hover{background:var(--ink);color:var(--bone)}
+@media(max-width:900px){.lang-btn{padding:7px 10px;font-size:10px;margin-left:8px}}
+
+/* SCROLL HINT */
+.scroll-hint{display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 0;cursor:pointer;text-decoration:none;color:var(--ink-dim);transition:color .2s}
+.scroll-hint:hover{color:var(--red)}
+.scroll-hint-text{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.scroll-hint-arrow{font-size:24px;animation:scrollBounce 2s ease-in-out infinite;color:var(--red)}
+@keyframes scrollBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div class="cursor-ring" id="cursorRing"><span class="cursor-label" id="cursorLabel">◉ SOLVR</span></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<!-- TICKER -->
+<div class="ticker-bar">
+  <div class="ticker-track">
+    <span data-es="Caso 02">Case Study 02</span><span>AMG Abogados</span><span data-es="Clasificación IA de Emails">AI Email Triage</span><span data-es="96.4% precisión">96.4% accuracy</span><span data-es="4.2 min respuesta">4.2 min response</span><span>Claude · Gmail · LangGraph</span>
+    <span data-es="Caso 02">Case Study 02</span><span>AMG Abogados</span><span data-es="Clasificación IA de Emails">AI Email Triage</span><span data-es="96.4% precisión">96.4% accuracy</span><span data-es="4.2 min respuesta">4.2 min response</span><span>Claude · Gmail · LangGraph</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="solvr-portfolio (1).html" class="logo">SOLVR<span class="dot"></span></a>
+  <div class="nav-links">
+    <a href="solvr-portfolio (1).html#work" data-es="<span class='num'>01</span>Trabajo"><span class="num">01</span>Work</a>
+    <a href="solvr-portfolio (1).html#services" data-es="<span class='num'>02</span>Servicios"><span class="num">02</span>Services</a>
+    <a href="solvr-portfolio (1).html#process" data-es="<span class='num'>03</span>Proceso"><span class="num">03</span>Process</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:0">
+    <a href="solvr-portfolio (1).html#contact" class="nav-cta" data-es="<span class='sq'></span> Iniciar Proyecto <span>→</span>"><span class="sq"></span> Start a Project <span>→</span></a>
+    <button class="lang-btn" id="langToggle" aria-label="Cambiar a Español">ES</button>
+  </div>
+</nav>
+
+<!-- CASE HERO -->
+<section class="case-hero">
+  <div class="case-breadcrumb">
+    <a href="solvr-portfolio (1).html">SOLVR.</a>
+    <span class="sep">→</span>
+    <a href="solvr-portfolio (1).html#work" data-es="Trabajo">Work</a>
+    <span class="sep">→</span>
+    <span data-es="Caso 02">Case 02</span>
+  </div>
+  <div class="case-hero-grid">
+    <div class="case-hero-title">
+      <h1 data-es="Un agente IA que <span class='serif'>clasifica</span> 200 emails al día<span class='red'>.</span>">An AI agent that <span class="serif">triages</span> 200 emails a day<span class="red">.</span></h1>
+      <div class="case-hero-subtitle" data-es="AMG Abogados se ahogaba en emails de clientes. Construimos un sistema IA que lee, clasifica y enruta cada mensaje — con <em>96.4% de precisión</em> y cero supervisión humana.">AMG Abogados was drowning in client emails. We built an AI system that reads, classifies, and routes every message — with <em>96.4% accuracy</em> and zero human oversight.</div>
+    </div>
+    <div class="case-hero-meta">
+      <div class="meta-item">
+        <div class="meta-label" data-es="Cliente">Client</div>
+        <div class="meta-value">AMG Abogados</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Sector</div>
+        <div class="meta-value" data-es="<span class='serif'>Firma legal mid-market</span>"><span class="serif">Mid-market law firm</span></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label" data-es="Ubicación">Location</div>
+        <div class="meta-value" data-es="<span class='serif'>CDMX, México</span>"><span class="serif">CDMX, Mexico</span></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Stack</div>
+        <div class="meta-value">Claude · Gmail · LangGraph</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label" data-es="Plazo">Timeline</div>
+        <div class="meta-value" data-es="8 <span class='serif'>semanas</span>">8 <span class="serif">weeks</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCROLL HINT -->
+<a href="#case-body" class="scroll-hint" data-es="<span class='scroll-hint-text'>Leer más</span><span class='scroll-hint-arrow'>↓</span>">
+  <span class="scroll-hint-text">Read more</span>
+  <span class="scroll-hint-arrow">↓</span>
+</a>
+
+<!-- STATS BAND -->
+<section class="case-stats">
+  <div class="case-stat">
+    <div class="case-stat-num"><span class="red">4.2</span> min</div>
+    <div class="case-stat-label" data-es="Tiempo de respuesta mediano">Median response time</div>
+  </div>
+  <div class="case-stat">
+    <div class="case-stat-num">96.4<span class="red">%</span></div>
+    <div class="case-stat-label" data-es="Precisión de clasificación">Classification accuracy</div>
+  </div>
+  <div class="case-stat">
+    <div class="case-stat-num"><span class="red">200</span></div>
+    <div class="case-stat-label" data-es="Emails clasificados diario">Emails triaged daily</div>
+  </div>
+  <div class="case-stat">
+    <div class="case-stat-num"><span class="red">0</span></div>
+    <div class="case-stat-label" data-es="Emails perdidos a la fecha">Emails missed to date</div>
+  </div>
+</section>
+
+<!-- CASE BODY -->
+<div class="case-body" id="case-body">
+
+  <!-- THE PROBLEM -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>problema</span><span class='red'>.</span>">The <span class="serif">problem</span><span class="red">.</span></h2>
+    <p data-es="AMG Abogados es una firma mid-market que maneja litigios, asesoría corporativa y cumplimiento en 14 áreas de práctica. Su bandeja de entrada era una zona de guerra. <strong>Alrededor de 200 emails por día de varios sectores o clientes</strong>, fluyendo en buzones compartidos, cada uno necesitando ser leído, clasificado por urgencia y área de práctica, y enrutado al abogado correcto.">AMG Abogados is a mid-market firm handling litigation, corporate advisory, and compliance across 14 practice areas. Their inbox was a warzone. <strong>Around 200 emails per day from various sectors or clients</strong>, flowing into shared mailboxes, each needing to be read, classified by urgency and practice area, and routed to the right attorney.</p>
+    <p data-es="Su proceso existente dependía de <em>tres paralegales a tiempo completo</em> que no hacían más que leer y reenviar correos. Asuntos urgentes quedaban enterrados. Las preguntas de rutina escalaban a socios senior. Controles de conflictos de interés ocurrían tras el hecho — o no ocurrían.">Their existing process relied on <em>three full-time paralegals</em> who did nothing but read and forward emails. Urgent matters got buried. Routine questions were escalated to senior partners. Conflicts-of-interest checks happened after the fact — or not at all.</p>
+    <p data-es="El tiempo promedio desde la recepción del email a la respuesta inicial era <strong>4.7 horas</strong>. Para una firma que cobra por respuesta, la demora les costaba clientes.">The average time from email received to first attorney response was <strong>4.7 hours</strong>. For a firm that bills by responsiveness, that delay was costing them clients.</p>
+
+    <div class="case-quote">
+      <blockquote data-es="Teníamos tres personas cuyo único trabajo era leer emails y decidir quién debe leerlos. Eso no es un proceso — <em>es el purgatorio</em>.">"We had three people whose entire job was to read emails and decide who should actually read them. That's not a process — <em>that's purgatory</em>."</blockquote>
+      <div class="quote-author" data-es="— Socio Director, AMG Abogados">— Managing Partner, AMG Abogados</div>
+    </div>
+  </div>
+
+  <!-- BEFORE / AFTER -->
+  <div class="case-section">
+    <h2 data-es="Antes <span class='red'>&</span> <span class='serif'>después</span><span class='red'>.</span>">Before <span class="red">&</span> <span class="serif">after</span><span class="red">.</span></h2>
+    <div class="before-after">
+      <div class="ba-col before">
+        <div class="ba-label" data-es="Antes de SOLVR">Before SOLVR</div>
+        <ul class="ba-list">
+          <li data-es="3 paralegales FTE clasificando manual">3 FTE paralegals triaging manually</li>
+          <li data-es="4.7 horas t. respuesta promedio">4.7 hour average response time</li>
+          <li data-es="14 áreas de práctica, sin reglas de ruteo claro">14 practice areas, no clear routing rules</li>
+          <li data-es="Emails urgentes perdidos en ruido">Urgent emails buried in noise</li>
+          <li data-es="Revisión de conflictos reactiva">Conflicts-of-interest checked reactively</li>
+          <li data-es="Sin métricas de correos">No analytics on email patterns</li>
+        </ul>
+      </div>
+      <div class="ba-divider">→</div>
+      <div class="ba-col after">
+        <div class="ba-label" data-es="Después de SOLVR">After SOLVR</div>
+        <ul class="ba-list">
+          <li data-es="Agente IA hace 100% evaluación">AI agent handles 100% of classification</li>
+          <li data-es="4.2 mins de resp. mediana">4.2 min median response time</li>
+          <li data-es="Auto-enrutamiento al abogado y área correctas">Auto-routing to correct attorney + practice</li>
+          <li data-es="Puntuación base c/ alertas">Priority scoring with escalation alerts</li>
+          <li data-es="Detección de conflictos tiempo real">Real-time conflict detection on every email</li>
+          <li data-es="Métricas semanales para directivos">Weekly analytics dashboard for partners</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE APPROACH -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>enfoque</span><span class='red'>.</span>">The <span class="serif">approach</span><span class="red">.</span></h2>
+    <p data-es="Esto no fue un proyecto tipo 'lanzar GPT a la bandeja de entrada'. El triaje de emails legales tiene restricciones duras: <strong>confidencialidad, precisión y auditabilidad</strong>. Diseñamos un pipeline en LangGraph donde toda decisión es trazable y la clasificación se audita.">This wasn't a "throw GPT at an inbox" project. Legal email triage has hard constraints: <strong>confidentiality, accuracy, and auditability</strong>. We designed a multi-stage LangGraph pipeline where every decision is traceable and every classification is logged.</p>
+
+    <h3 data-es="Arquitectura de <span class='serif'>Agente</span>">Agent <span class="serif">architecture</span></h3>
+    <div class="flow-diagram">
+      <div class="flow-diagram-label" data-es="Flujo del pipeline">Pipeline flow</div>
+      <div class="flow-steps">
+        <div class="flow-step">Gmail Webhook</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step active">Claude Classifier</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Priority Scorer</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step highlight">Conflict Check</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Router</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step active">Attorney Inbox</div>
+      </div>
+    </div>
+
+    <p data-es="El modelo de clasificación central usa <strong>Claude 3.5 Sonnet</strong> con un prompt de sistema ajustado y 14 áreas de práctica. Lo aumentamos con una capa RAG entrenada sobre 18 meses de emails rutados históricamente, para que entienda clientes y prioridades.">The core classification model uses <strong>Claude 3.5 Sonnet</strong> with a carefully tuned system prompt and 14 practice-area definitions. We augmented it with a RAG layer trained on 18 months of historically-routed emails, so the model understands AMG Abogados' specific client relationships and routing preferences.</p>
+    <p data-es="Cada email pasa a través de un <strong>detector de conflicto de interés</strong> que coteja contexto con nombres de remitentes, casos en bases actuales. Atrapó 23 posibles problemas el primer mes.">Every email passes through a <strong>conflict-of-interest detector</strong> that cross-references sender identity, mentioned parties, and case numbers against an internal database. This alone caught 23 potential conflicts in the first month — issues that would have been missed under the manual process.</p>
+
+    <h3 data-es="Cronología de <span class='serif'>entrega</span>">Delivery <span class="serif">timeline</span></h3>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semanas 1–2 / Auditoría">Weeks 1–2 / Audit</div>
+        <div class="timeline-desc" data-es="Analizamos tráfico de 90 días atrás. Generamos taxonomía oficial con directivos. Identificamos áreas.">Analyzed 90 days of email traffic across all practice areas. Built a <strong>classification taxonomy</strong> with AMG Abogados' senior partners. Identified 14 primary categories and 47 sub-categories.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semanas 3–4 / Diseño + Eval">Weeks 3–4 / Design + Eval</div>
+        <div class="timeline-desc" data-es="Diseñamos el pipeline. Probamos con lote de prueba de 500 emails reales bajo reglas estrictas de un 95% base y 99% en detección de conflicto de interés.">Designed the LangGraph pipeline. Built an <strong>evaluation suite of 500 labeled emails</strong>. Established accuracy thresholds: 95% minimum classification, 99% conflict detection.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semanas 5–6 / Construcción">Weeks 5–6 / Build</div>
+        <div class="timeline-desc" data-es="Implementación completa del framework con integración de IA, conectores API e instanciación de un fallback humano bajo el margen de 85% de confianza.">Implemented the full agent graph with <strong>Claude 3.5 Sonnet</strong>, conflict detection, priority scoring, and Gmail integration. Built guardrails for low-confidence classifications — anything below 85% confidence routes to a human reviewer.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semanas 7–8 / Monitor + Entrega">Weeks 7–8 / Shadow + Ship</div>
+        <div class="timeline-desc" data-es="Operación oculta por 10 días verificando su confiabilidad junto de un humano. Pasó sin fallas y publicamos.">Ran in shadow mode for 10 days alongside the manual team. <strong>Accuracy: 96.4%</strong>. Zero missed urgent items. Deployed to production with monitoring dashboard for partners.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE STACK -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>stack</span><span class='red'>.</span>">The <span class="serif">stack</span><span class="red">.</span></h2>
+    <p data-es="Cada componente fue elegido considerando el impacto en auditorías y regulaciones vigentes en el país.">Every component was chosen for auditability and the firm's specific compliance needs.</p>
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="stack-name">Claude 3.5</div>
+        <div class="stack-role" data-es="Clasificación + resúmenes">Classification + summarization</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">LangGraph</div>
+        <div class="stack-role" data-es="Orquestación">Agent orchestration</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Gmail API</div>
+        <div class="stack-role" data-es="Flujo y ruteo emails">Email ingestion + routing</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Pinecone</div>
+        <div class="stack-role" data-es="Base vectorial RAG">RAG vector store</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Postgres</div>
+        <div class="stack-role" data-es="Auditoría + Conflictos">Audit log + conflict database</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Langfuse</div>
+        <div class="stack-role" data-es="Observabilidad para LLMs">LLM observability + evals</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACCURACY -->
+  <div class="case-section">
+    <h2 data-es="Precisión <span class='serif'>Métricas</span><span class='red'>.</span>">Accuracy <span class="serif">metrics</span><span class="red">.</span></h2>
+    <p data-es="Los números muestran los primeros 60 días en operación final.">These numbers are from production traffic, not test sets. Measured over the first 60 days of deployment.</p>
+    <table class="metrics-table">
+      <thead>
+        <tr>
+          <th data-es="Métrica">Metric</th>
+          <th data-es="Objetivo">Target</th>
+          <th data-es="Actual">Actual</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td data-es="Clasificación en área">Practice area classification</td>
+          <td>95.0%</td>
+          <td><strong class="red">96.4%</strong></td>
+        </tr>
+        <tr>
+          <td data-es="Puntuación de prioridad">Priority scoring accuracy</td>
+          <td>92.0%</td>
+          <td><strong class="red">94.1%</strong></td>
+        </tr>
+        <tr>
+          <td data-es="Detección de conflicto">Conflict detection recall</td>
+          <td>99.0%</td>
+          <td><strong class="red">100%</strong></td>
+        </tr>
+        <tr>
+          <td data-es="Procesamiento promedio">Median processing time</td>
+          <td data-es="&lt;10 min">&lt;10 min</td>
+          <td data-es="<strong class='red'>4.2 min</strong>"><strong class="red">4.2 min</strong></td>
+        </tr>
+        <tr>
+          <td data-es="Intervención humana">Emails requiring human fallback</td>
+          <td>&lt;10%</td>
+          <td><strong class="red">3.6%</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- THE RESULT -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>resultado</span><span class='red'>.</span>">The <span class="serif">result</span><span class="red">.</span></h2>
+    <p data-es="Rápidamente AMG designó tareas rentables al personal, librándolos del triaje manual tedioso, salvando <em>$340K</em>.">Within 60 days, AMG Abogados reassigned all three triage paralegals to <strong>substantive casework</strong> — work that actually requires a human brain. The managing partner estimated the reallocation added <em>$340K in annual recoverable billing capacity</em>.</p>
+    <p data-es="La satisfacción general del cliente de respuestas instantáneas y tableros analíticos no se hicieron esperar.">Client satisfaction scores jumped 18%. Partners now receive a weekly analytics report showing email volume trends, response time distributions, and emerging client issues — data they'd never had before.</p>
+    <p data-es="Pasaron sobre <strong>72,000 emails</strong> sin fallas en elementos urgentes, los 365 días del año.">The system has processed over <strong>72,000 emails</strong> without a single missed urgent item. It runs 24/7, including weekends and holidays — something the manual team never could.</p>
+
+    <div class="case-quote">
+      <blockquote data-es="El agente notificó el conflicto antes de que nosotros mismos pudiésemos.">"The agent caught a conflict-of-interest in a new matter that <em>none of us had flagged</em>. That single catch probably saved us from a malpractice claim."</blockquote>
+      <div class="quote-author" data-es="— General Counsel, AMG Abogados">— General Counsel, AMG Abogados</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CASE NAV -->
+<div class="case-nav">
+  <a href="case-study-01.html" class="case-nav-item">
+    <div class="case-nav-label" data-es="<span class='case-nav-arrow'>←</span> Previo · 01"><span class="case-nav-arrow">←</span> Previous · 01</div>
+    <div class="case-nav-title" data-es="<span class='serif'>onboarding</span> 14 Pasos → webhook">14-step <span class="serif">onboarding</span> → one webhook</div>
+  </a>
+  <a href="case-study-03.html" class="case-nav-item" style="text-align:right">
+    <div class="case-nav-label" data-es="Próximo · 03 <span class='case-nav-arrow'>→</span>">Next · 03 <span class="case-nav-arrow">→</span></div>
+    <div class="case-nav-title" data-es="Sincronía entre <span class='serif'>seis</span> canales">Inventory sync across <span class="serif">six</span> channels</div>
+  </a>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">SOLVR<span class="dot"></span></div>
+  <div class="footer-contact">
+    <a href="mailto:contact@solvr.cloud">contact@solvr.cloud</a>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/company/solvr" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <span data-es="Ciudad de México">Mexico City</span>
+  </div>
+</footer>
+<div class="footer-bottom">
+  <span data-es="© 2026 SOLVR.">© 2026 SOLVR.</span>
+</div>
+
+<script>
+(function(){
+  if(window.matchMedia('(hover:none),(pointer:coarse)').matches) return;
+  const ring=document.getElementById('cursorRing'),dot=document.getElementById('cursorDot'),label=document.getElementById('cursorLabel');
+  if(!ring||!dot) return;
+  let mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  window.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.transform=`translate(${mx}px,${my}px)translate(-50%,-50%)`});
+  (function loop(){rx+=(mx-rx)*.18;ry+=(my-ry)*.18;ring.style.transform=`translate(${rx}px,${ry}px)translate(-50%,-50%)`;requestAnimationFrame(loop)})();
+  [{sel:'a,button,.nav-cta',label:'◉ CLICK'},{sel:'.stack-card',label:'◉ STACK'},{sel:'.case-stat',label:'◉ DATA'},{sel:'blockquote',label:'◉ QUOTE'},{sel:'.flow-step',label:'◉ PIPELINE'}].forEach(({sel,label:t})=>{
+    document.querySelectorAll(sel).forEach(el=>{
+      el.addEventListener('mouseenter',()=>{ring.classList.add('is-hover');dot.classList.add('is-hover');label.textContent=t});
+      el.addEventListener('mouseleave',()=>{ring.classList.remove('is-hover');dot.classList.remove('is-hover')});
+    });
+  });
+  window.addEventListener('mousedown',()=>ring.classList.add('is-click'));
+  window.addEventListener('mouseup',()=>ring.classList.remove('is-click'));
+  window.addEventListener('mouseleave',()=>{ring.style.opacity='0';dot.style.opacity='0'});
+  window.addEventListener('mouseenter',()=>{ring.style.opacity='1';dot.style.opacity='1'});
+})();
+</script>
+<script src="anim.js"></script>
+<script src="lang.js"></script>
+</body>
+</html>

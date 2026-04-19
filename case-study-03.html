@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SOLVR. — Case Study 03 · Mercado Verde</title>
+<meta name="description" content="How SOLVR built real-time inventory sync across six sales channels for Mercado Verde — cutting stock-outs by 83% and unifying operations into a single source of truth.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700;800;900&family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bone:#F9F8F0;--ink:#100F0E;--red:#D33C2D;--red-dark:#a82e22;
+  --grey:#9A9893;--tan:#A48466;--tan-light:#c9b39a;
+  --line:#100F0E;--line-soft:rgba(16,15,14,.12);--ink-dim:#4a4845;
+  --cream:#efecd9;
+  --display:'Bebas Neue','Archivo',sans-serif;
+  --brand:'Bebas Neue','Archivo Black',sans-serif;
+  --sans:'Archivo',system-ui,sans-serif;
+  --serif:'Instrument Serif',Georgia,serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bone);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;scroll-behavior:smooth}
+::selection{background:var(--red);color:var(--bone)}
+
+/* CURSOR */
+@media(hover:hover)and(pointer:fine){html,body,a,button,*{cursor:none!important}}
+.cursor-ring{position:fixed;top:0;left:0;width:36px;height:36px;border:1.5px solid var(--ink);border-radius:50%;pointer-events:none;z-index:10000;will-change:transform;transition:width .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1),border-color .2s,background-color .2s,opacity .2s;mix-blend-mode:difference;background:transparent}
+.cursor-ring::before,.cursor-ring::after{content:"";position:absolute;background:var(--bone);transition:all .25s}
+.cursor-ring::before{top:50%;left:-6px;right:-6px;height:1px;transform:translateY(-50%)}
+.cursor-ring::after{left:50%;top:-6px;bottom:-6px;width:1px;transform:translateX(-50%)}
+.cursor-dot{position:fixed;top:0;left:0;width:6px;height:6px;background:var(--red);border-radius:0;pointer-events:none;z-index:10001;will-change:transform;transition:width .18s,height .18s,background-color .18s,opacity .2s}
+.cursor-ring.is-hover{width:88px;height:88px;border-color:var(--red);border-width:1.5px;mix-blend-mode:normal;background:rgba(211,60,45,.06)}
+.cursor-ring.is-hover::before,.cursor-ring.is-hover::after{background:var(--red)}
+.cursor-ring.is-hover::before{left:-12px;right:-12px}
+.cursor-ring.is-hover::after{top:-12px;bottom:-12px}
+.cursor-dot.is-hover{width:0;height:0;opacity:0}
+.cursor-ring.is-click{width:20px;height:20px;border-color:var(--red);mix-blend-mode:normal}
+.cursor-label{position:absolute;top:100%;left:50%;transform:translateX(-50%)translateY(16px);font-family:var(--mono);font-size:9px;letter-spacing:.22em;color:var(--red);text-transform:uppercase;white-space:nowrap;opacity:0;transition:opacity .25s;font-weight:500;padding:3px 8px;background:var(--bone);border:1px solid var(--red)}
+.cursor-ring.is-hover .cursor-label{opacity:1;transition-delay:.05s}
+@media(hover:none),(pointer:coarse){.cursor-ring,.cursor-dot{display:none}html,body,*{cursor:auto!important}}
+
+/* PAPER TEXTURE */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1000;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0.063  0 0 0 0 0.059  0 0 0 0 0.055  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.45'/></svg>");opacity:.35;mix-blend-mode:multiply}
+
+/* TICKER */
+.ticker-bar{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--ink);color:var(--bone);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:8px 0;overflow:hidden}
+.ticker-track{display:flex;gap:52px;white-space:nowrap;animation:tick 60s linear infinite;width:max-content}
+.ticker-track span{display:inline-flex;align-items:center;gap:14px}
+.ticker-track span::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* NAV */
+nav{position:fixed;top:34px;left:0;right:0;z-index:90;display:flex;justify-content:space-between;align-items:center;padding:18px 40px;background:rgba(249,248,240,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.logo{font-family:var(--brand);font-size:38px;letter-spacing:-.01em;display:inline-flex;align-items:baseline;line-height:.85;font-weight:400;text-decoration:none;color:var(--ink)}
+.logo .dot{display:inline-block;width:9px;height:9px;background:var(--red);margin-left:4px;transform:translateY(-1px)}
+.nav-links{display:flex;gap:36px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+.nav-links a{color:var(--ink);text-decoration:none;position:relative;padding:6px 0;transition:color .2s}
+.nav-links a:hover{color:var(--red)}
+.nav-links a .num{color:var(--grey);margin-right:8px;font-size:10px}
+.nav-cta{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;background:var(--ink);color:var(--bone);border:none;padding:12px 20px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .2s;font-weight:500;text-decoration:none}
+.nav-cta:hover{background:var(--red);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.nav-cta .sq{display:inline-block;width:6px;height:6px;background:var(--red)}
+.nav-cta:hover .sq{background:var(--bone)}
+
+/* CASE HERO */
+.case-hero{padding:clamp(120px,14vh,160px) clamp(20px,3vw,48px) 80px;border-bottom:2px solid var(--ink);position:relative;overflow:hidden}
+.case-hero::after{content:"03";position:absolute;right:-20px;bottom:-60px;font-family:var(--display);font-size:clamp(280px,30vw,500px);color:rgba(16,15,14,.04);line-height:.8;pointer-events:none;font-weight:400;letter-spacing:-.02em}
+.case-breadcrumb{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:48px;display:flex;align-items:center;gap:12px}
+.case-breadcrumb a{color:var(--ink-dim);text-decoration:none;transition:color .2s}
+.case-breadcrumb a:hover{color:var(--red)}
+.case-breadcrumb .sep{color:var(--red)}
+.case-hero-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:64px;align-items:end}
+.case-hero-title h1{font-family:var(--display);font-weight:400;font-size:clamp(56px,8vw,130px);line-height:.92;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:24px}
+.case-hero-title h1 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em}
+.case-hero-title h1 .red{color:var(--red)}
+.case-hero-subtitle{font-family:var(--serif);font-size:clamp(18px,2vw,26px);line-height:1.35;color:var(--ink-dim);max-width:600px}
+.case-hero-subtitle em{color:var(--red);font-weight:400}
+.case-hero-meta{display:flex;flex-direction:column;gap:20px}
+.case-hero-meta .meta-item{padding-bottom:16px;border-bottom:1px solid var(--line-soft)}
+.case-hero-meta .meta-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.case-hero-meta .meta-label::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+.case-hero-meta .meta-value{font-family:var(--display);font-weight:400;font-size:28px;letter-spacing:-.005em;text-transform:uppercase;line-height:1}
+.case-hero-meta .meta-value .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none}
+
+/* STATS BAND */
+.case-stats{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid var(--ink);background:var(--ink);color:var(--bone)}
+.case-stat{padding:48px 36px;border-right:1px solid rgba(249,248,240,.08);text-align:center}
+.case-stat:last-child{border-right:none}
+.case-stat-num{font-family:var(--display);font-weight:400;font-size:clamp(56px,6vw,88px);line-height:.9;margin-bottom:8px;letter-spacing:-.01em}
+.case-stat-num .red{color:var(--red)}
+.case-stat-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--grey)}
+
+/* CASE BODY */
+.case-body{max-width:920px;margin:0 auto;padding:100px clamp(20px,3vw,48px)}
+.case-body h2{font-family:var(--display);font-weight:400;font-size:clamp(40px,5vw,72px);line-height:.92;text-transform:uppercase;letter-spacing:-.005em;margin-bottom:32px}
+.case-body h2 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em}
+.case-body h2 .red{color:var(--red)}
+.case-body h3{font-family:var(--display);font-weight:400;font-size:clamp(24px,3vw,36px);line-height:.95;text-transform:uppercase;margin-bottom:20px;margin-top:56px;letter-spacing:-.005em}
+.case-body h3 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none}
+.case-body p{font-size:16px;line-height:1.75;color:var(--ink-dim);margin-bottom:24px;max-width:720px}
+.case-body p strong{color:var(--ink);font-weight:600}
+.case-body p em{color:var(--red);font-style:normal;font-weight:500}
+.case-section{padding-bottom:80px;margin-bottom:80px;border-bottom:1px solid var(--line-soft)}
+.case-section:last-child{border-bottom:none;margin-bottom:0}
+
+/* QUOTE BLOCK */
+.case-quote{border-left:4px solid var(--red);padding:32px 0 32px 36px;margin:48px 0}
+.case-quote blockquote{font-family:var(--serif);font-size:clamp(22px,2.4vw,32px);line-height:1.3;font-weight:400}
+.case-quote blockquote em{color:var(--red);font-style:italic}
+.case-quote .quote-author{margin-top:20px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+
+/* STACK LIST */
+.stack-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:36px 0 48px}
+.stack-card{border:1px solid var(--ink);padding:24px;position:relative;transition:all .3s;cursor:default}
+.stack-card:hover{background:var(--cream);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.stack-card .stack-name{font-family:var(--display);font-weight:400;font-size:28px;text-transform:uppercase;line-height:1;margin-bottom:8px;letter-spacing:-.005em}
+.stack-card .stack-role{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+
+/* CHANNEL GRID */
+.channel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:48px 0;border:1px solid var(--ink)}
+.channel-card{padding:28px 24px;border-right:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);transition:all .3s;position:relative}
+.channel-card:nth-child(3n){border-right:none}
+.channel-card:nth-child(n+4){border-bottom:none}
+.channel-card:hover{background:var(--cream)}
+.channel-num{font-family:var(--display);font-weight:400;font-size:48px;color:var(--red);line-height:.9;margin-bottom:8px}
+.channel-name{font-family:var(--display);font-weight:400;font-size:22px;text-transform:uppercase;letter-spacing:-.005em;line-height:1;margin-bottom:6px}
+.channel-detail{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim)}
+
+/* ARCHITECTURE DIAGRAM */
+.arch-diagram{margin:48px 0;padding:40px;border:1px solid var(--ink);background:var(--cream);position:relative}
+.arch-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:28px;display:flex;align-items:center;gap:8px}
+.arch-label::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+.arch-row{display:flex;align-items:center;gap:0;margin-bottom:12px;flex-wrap:wrap}
+.arch-node{padding:14px 20px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--ink);background:var(--bone);text-align:center;min-width:130px}
+.arch-node.hub{background:var(--ink);color:var(--bone);font-family:var(--display);font-size:24px;letter-spacing:-.005em;padding:20px 28px;min-width:160px}
+.arch-node.store{background:var(--red);color:var(--bone);border-color:var(--red)}
+.arch-connector{font-family:var(--display);font-size:20px;color:var(--red);padding:0 8px;flex-shrink:0}
+.arch-row-label{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--grey);margin-bottom:6px;margin-top:24px}
+
+/* TIMELINE */
+.timeline{margin:48px 0;position:relative}
+.timeline::before{content:"";position:absolute;left:20px;top:0;bottom:0;width:1px;background:var(--line-soft)}
+.timeline-item{padding-left:56px;margin-bottom:36px;position:relative}
+.timeline-item::before{content:"";position:absolute;left:14px;top:6px;width:13px;height:13px;border:2px solid var(--red);background:var(--bone)}
+.timeline-item:last-child::before{background:var(--red)}
+.timeline-week{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--red);margin-bottom:6px;font-weight:500}
+.timeline-desc{font-size:15px;line-height:1.65;color:var(--ink-dim)}
+.timeline-desc strong{color:var(--ink);font-weight:600}
+
+/* BEFORE / AFTER */
+.before-after{display:grid;grid-template-columns:1fr auto 1fr;gap:0;margin:48px 0;border:1px solid var(--ink)}
+.ba-col{padding:32px}
+.ba-col.before{background:var(--cream)}
+.ba-col.after{background:var(--ink);color:var(--bone)}
+.ba-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.ba-label::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+.ba-col.before .ba-label{color:var(--ink-dim)}
+.ba-col.after .ba-label{color:var(--grey)}
+.ba-list{list-style:none}
+.ba-list li{font-size:14px;line-height:1.7;padding:6px 0;border-bottom:1px solid var(--line-soft);display:flex;align-items:baseline;gap:10px}
+.ba-col.after .ba-list li{border-color:rgba(249,248,240,.08)}
+.ba-list li::before{content:"×";font-family:var(--mono);font-size:12px;color:var(--red);flex-shrink:0}
+.ba-col.after .ba-list li::before{content:"✓";color:var(--red)}
+.ba-divider{width:48px;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:28px;color:var(--bone);writing-mode:vertical-lr}
+
+/* CASE NAV */
+.case-nav{border-top:2px solid var(--ink);display:grid;grid-template-columns:1fr 1fr}
+.case-nav-item{padding:80px 48px;display:flex;flex-direction:column;gap:12px;transition:background .35s;cursor:pointer;text-decoration:none;color:var(--ink)}
+.case-nav-item:first-child{border-right:1px solid var(--line-soft)}
+.case-nav-item:hover{background:var(--cream)}
+.case-nav-label{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);display:flex;align-items:center;gap:8px}
+.case-nav-title{font-family:var(--display);font-weight:400;font-size:clamp(24px,3.5vw,48px);text-transform:uppercase;line-height:.92;letter-spacing:-.005em}
+.case-nav-title .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em;color:var(--red)}
+.case-nav-arrow{font-size:32px;color:var(--red);transition:transform .3s}
+.case-nav-item:hover .case-nav-arrow{transform:translateX(8px)}
+.case-nav-item:first-child:hover .case-nav-arrow{transform:translateX(-8px)}
+
+/* FOOTER */
+footer{padding:18px 40px;display:flex;justify-content:space-between;align-items:center;gap:24px;background:var(--bone);border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.footer-brand{font-family:var(--brand);font-size:28px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;display:inline-flex;align-items:baseline;font-weight:400}
+.footer-brand .dot{display:inline-block;width:7px;height:7px;background:var(--red);margin-left:3px;transform:translateY(-1px)}
+.footer-contact{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap}
+.footer-contact a{color:var(--ink);text-decoration:none;transition:color .2s}
+.footer-contact a:hover{color:var(--red)}
+.footer-contact .sep{opacity:.4}
+.footer-bottom{padding:10px 40px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--ink-dim);text-transform:uppercase;background:var(--bone)}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  nav{padding:12px 18px;top:28px}
+  .logo{font-size:28px}
+  .nav-links{display:none}
+  .nav-cta{padding:9px 14px;font-size:10px}
+  .case-hero{padding:104px 20px 48px}
+  .case-hero-grid{grid-template-columns:1fr;gap:32px}
+  .case-hero-title h1{font-size:clamp(52px,11vw,84px)}
+  .case-hero-meta{flex-direction:row;flex-wrap:wrap;gap:16px}
+  .case-hero-meta .meta-item{flex:1;min-width:140px}
+  .case-stats{grid-template-columns:repeat(2,1fr)}
+  .case-stat{border-bottom:1px solid rgba(249,248,240,.08)}
+  .case-body{padding:60px 20px}
+  .stack-grid{grid-template-columns:1fr}
+  .channel-grid{grid-template-columns:1fr 1fr}
+  .channel-card:nth-child(3n){border-right:1px solid var(--line-soft)}
+  .channel-card:nth-child(2n){border-right:none}
+  .channel-card{border-bottom:1px solid var(--line-soft)!important}
+  .before-after{grid-template-columns:1fr}
+  .ba-divider{width:100%;height:40px;writing-mode:horizontal-tb}
+  .arch-row{flex-direction:column;align-items:stretch}
+  .arch-connector{transform:rotate(90deg);text-align:center;padding:4px 0}
+  .arch-node{min-width:auto}
+  .case-nav{grid-template-columns:1fr}
+  .case-nav-item:first-child{border-right:none;border-bottom:1px solid var(--line-soft)}
+  .case-nav-item{padding:48px 20px}
+  footer{padding:14px 20px;gap:12px;justify-content:center;text-align:center}
+  .footer-brand{font-size:22px}
+  .footer-contact{font-size:10px;gap:10px;justify-content:center}
+  .footer-bottom{gap:8px;padding:10px 20px;font-size:9px;text-align:center;justify-content:center}
+}
+@media(max-width:480px){
+  .case-hero{padding:92px 16px 36px}
+  .case-hero-title h1{font-size:clamp(44px,13vw,64px)}
+  .case-stats{grid-template-columns:1fr}
+  .case-stat{padding:32px 24px}
+  .case-body h2{font-size:clamp(32px,8vw,48px)}
+  .stack-grid{grid-template-columns:1fr}
+  .channel-grid{grid-template-columns:1fr}
+  .channel-card{border-right:none!important}
+  footer{gap:10px;padding:12px 16px}
+  .footer-brand{font-size:20px}
+  .footer-contact{font-size:9.5px;gap:8px}
+}
+
+/* LANG TOGGLE */
+.lang-btn{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;background:transparent;color:var(--ink);border:1.5px solid var(--ink);padding:8px 14px;cursor:pointer;transition:all .2s;font-weight:600;margin-left:12px;line-height:1}
+.lang-btn:hover{background:var(--ink);color:var(--bone)}
+@media(max-width:900px){.lang-btn{padding:7px 10px;font-size:10px;margin-left:8px}}
+
+/* SCROLL HINT */
+.scroll-hint{display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 0;cursor:pointer;text-decoration:none;color:var(--ink-dim);transition:color .2s}
+.scroll-hint:hover{color:var(--red)}
+.scroll-hint-text{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.scroll-hint-arrow{font-size:24px;animation:scrollBounce 2s ease-in-out infinite;color:var(--red)}
+@keyframes scrollBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div class="cursor-ring" id="cursorRing"><span class="cursor-label" id="cursorLabel">◉ SOLVR</span></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<!-- TICKER -->
+<div class="ticker-bar">
+  <div class="ticker-track">
+    <span data-es="Caso 03">Case Study 03</span><span>Mercado Verde</span><span data-es="Sincronización de inventario">Inventory Sync</span><span data-es="−83% quiebres de stock">−83% stock-outs</span><span data-es="6 canales unificados">6 channels unified</span><span>Temporal · Shopify · BigQuery</span>
+    <span data-es="Caso 03">Case Study 03</span><span>Mercado Verde</span><span data-es="Sincronización de inventario">Inventory Sync</span><span data-es="−83% quiebres de stock">−83% stock-outs</span><span data-es="6 canales unificados">6 channels unified</span><span>Temporal · Shopify · BigQuery</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="solvr-portfolio (1).html" class="logo">SOLVR<span class="dot"></span></a>
+  <div class="nav-links">
+    <a href="solvr-portfolio (1).html#work" data-es="<span class='num'>01</span>Trabajo"><span class="num">01</span>Work</a>
+    <a href="solvr-portfolio (1).html#services" data-es="<span class='num'>02</span>Servicios"><span class="num">02</span>Services</a>
+    <a href="solvr-portfolio (1).html#process" data-es="<span class='num'>03</span>Proceso"><span class="num">03</span>Process</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:0">
+    <a href="solvr-portfolio (1).html#contact" class="nav-cta" data-es="<span class='sq'></span> Iniciar Proyecto <span>→</span>"><span class="sq"></span> Start a Project <span>→</span></a>
+    <button class="lang-btn" id="langToggle" aria-label="Cambiar a Español">ES</button>
+  </div>
+</nav>
+
+<!-- CASE HERO -->
+<section class="case-hero">
+  <div class="case-breadcrumb">
+    <a href="solvr-portfolio (1).html">SOLVR.</a>
+    <span class="sep">→</span>
+    <a href="solvr-portfolio (1).html#work" data-es="Trabajo">Work</a>
+    <span class="sep">→</span>
+    <span data-es="Caso 03">Case 03</span>
+  </div>
+  <div class="case-hero-grid">
+    <div class="case-hero-title">
+      <h1 data-es="Sincronización de inventario en <span class='serif'>seis</span> canales, en tiempo real<span class='red'>.</span>">Inventory sync across <span class="serif">six</span> channels, in real time<span class="red">.</span></h1>
+      <div class="case-hero-subtitle" data-es="Mercado Verde vendía los mismos aguacates en seis plataformas — y sobrevendiendo en todas. Construimos una <em>única fuente de verdad</em> que sincroniza en menos de 3 segundos.">Mercado Verde was selling the same avocados on six platforms — and overselling on all of them. We built a <em>single source of truth</em> that syncs in under 3 seconds.</div>
+    </div>
+    <div class="case-hero-meta">
+      <div class="meta-item">
+        <div class="meta-label" data-es="Cliente">Client</div>
+        <div class="meta-value">Mercado Verde</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Sector</div>
+        <div class="meta-value" data-es="<span class='serif'>Marketplace D2C</span>"><span class="serif">D2C marketplace</span></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label" data-es="Ubicación">Location</div>
+        <div class="meta-value" data-es="<span class='serif'>Guanajuato, México</span>"><span class="serif">Guanajuato, Mexico</span></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Stack</div>
+        <div class="meta-value">Temporal · Shopify · BigQuery</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label" data-es="Plazo">Timeline</div>
+        <div class="meta-value" data-es="10 <span class='serif'>semanas</span>">10 <span class="serif">weeks</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCROLL HINT -->
+<a href="#case-body" class="scroll-hint" data-es="<span class='scroll-hint-text'>Leer más</span><span class='scroll-hint-arrow'>↓</span>">
+  <span class="scroll-hint-text">Read more</span>
+  <span class="scroll-hint-arrow">↓</span>
+</a>
+
+<!-- STATS BAND -->
+<section class="case-stats">
+  <div class="case-stat">
+    <div class="case-stat-num">−<span class="red">83</span>%</div>
+    <div class="case-stat-label" data-es="Reducción en quiebre de stock">Stock-out reduction</div>
+  </div>
+  <div class="case-stat">
+    <div class="case-stat-num"><span class="red">6</span> → 1</div>
+    <div class="case-stat-label" data-es="Canales unificados">Channels unified</div>
+  </div>
+  <div class="case-stat">
+    <div class="case-stat-num">&lt;<span class="red">3</span> sec</div>
+    <div class="case-stat-label" data-es="Latencia de sincronización">Sync latency</div>
+  </div>
+  <div class="case-stat">
+    <div class="case-stat-num"><span class="red">0</span></div>
+    <div class="case-stat-label" data-es="Sobreventas desde el lanzamiento">Oversells since launch</div>
+  </div>
+</section>
+
+<!-- CASE BODY -->
+<div class="case-body" id="case-body">
+
+  <!-- THE PROBLEM -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>problema</span><span class='red'>.</span>">The <span class="serif">problem</span><span class="red">.</span></h2>
+    <p data-es="Mercado Verde es un marketplace D2C especializado en bienes orgánicos, sirviendo CDMX, Guadalajara y Monterrey. Venden vía seis canales — Shopify, MercadoLibre, Amazon MX, Rappi, Cornershop, y un portal B2B.">Mercado Verde is a direct-to-consumer marketplace specializing in organic produce and artisanal goods, serving Mexico City, Guadalajara, and Monterrey. They sell through six distinct channels — their own Shopify storefront, MercadoLibre, Amazon Mexico, Rappi, Cornershop, and a wholesale portal for restaurants.</p>
+    <p data-es="El problema era muy grave: <strong>no tenían visibilidad de inventario en tiempo real multi-canal</strong>. Cada plataforma tenía su conteo. Si alguien compraba la última miel en Shopify, aún se mostraba viva en MercadoLibre.">The problem was devastatingly simple: <strong>they had no real-time inventory visibility across channels</strong>. Each platform maintained its own stock count. When a customer bought the last case of organic honey on Shopify, MercadoLibre still showed it in stock — and sold it again.</p>
+    <p data-es="La sobreventa era su <em>crisis central</em>. Cancelaban 12-15% de ventas al mes, costando mucho y deteriorando las relaciones con clientes y proveedores.">Overselling had become <em>the defining operational crisis</em>. In peak months, they were canceling 12-15% of orders. Customer refund requests were consuming two full-time coordinators. Their supplier relationships were fraying because they couldn't distinguish real demand from phantom demand.</p>
+
+    <div class="case-quote">
+      <blockquote data-es="Vendíamos los últimos aguacates en Amazon a las 8am y se volvían a vender en Rappi a las 9am. A las 10am teníamos <em>clientes molestos y ningún aguacate</em>.">"We'd sell out of avocados on Amazon at 8am and then sell them again on Rappi at 9am. By 10am we had <em>angry customers and no avocados</em>."</blockquote>
+      <div class="quote-author" data-es="— Jefe de Operaciones, Mercado Verde">— Head of Operations, Mercado Verde</div>
+    </div>
+  </div>
+
+  <!-- THE CHANNELS -->
+  <div class="case-section">
+    <h2 data-es="Seis <span class='serif'>canales</span><span class='red'>,</span> una verdad<span class='red'>.</span>">Six <span class="serif">channels</span><span class="red">,</span> one truth<span class="red">.</span></h2>
+    <p data-es="Cada canal tiene distintas APIs, límites y modelos. Unificarlos requería de una estructura a la medida.">Each channel had different APIs, different rate limits, different data models. Unifying them required a system that could handle the lowest common denominator while preserving channel-specific logic.</p>
+    <div class="channel-grid">
+      <div class="channel-card">
+        <div class="channel-num">01</div>
+        <div class="channel-name">Shopify</div>
+        <div class="channel-detail" data-es="Tienda DTC primaria">Primary DTC storefront</div>
+      </div>
+      <div class="channel-card">
+        <div class="channel-num">02</div>
+        <div class="channel-name">MercadoLibre</div>
+        <div class="channel-detail" data-es="Marketplace de mayor volumen">Marketplace · highest volume</div>
+      </div>
+      <div class="channel-card">
+        <div class="channel-num">03</div>
+        <div class="channel-name">Amazon MX</div>
+        <div class="channel-detail" data-es="FBA y envíos mercantiles">FBA + merchant fulfilled</div>
+      </div>
+      <div class="channel-card">
+        <div class="channel-num">04</div>
+        <div class="channel-name">Rappi</div>
+        <div class="channel-detail" data-es="Marketplace de delivery">Quick commerce delivery</div>
+      </div>
+      <div class="channel-card">
+        <div class="channel-num">05</div>
+        <div class="channel-name">Cornershop</div>
+        <div class="channel-detail" data-es="Envío de supermercado">Grocery delivery</div>
+      </div>
+      <div class="channel-card">
+        <div class="channel-num">06</div>
+        <div class="channel-name">Wholesale Portal</div>
+        <div class="channel-detail" data-es="Pedidos B2B a restaurantes">B2B restaurant orders</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BEFORE / AFTER -->
+  <div class="case-section">
+    <h2 data-es="Antes <span class='red'>&</span> <span class='serif'>después</span><span class='red'>.</span>">Before <span class="red">&</span> <span class="serif">after</span><span class="red">.</span></h2>
+    <div class="before-after">
+      <div class="ba-col before">
+        <div class="ba-label" data-es="Antes de SOLVR">Before SOLVR</div>
+        <ul class="ba-list">
+          <li data-es="6 sistemas asilados">6 isolated inventory systems</li>
+          <li data-es="Sincronía manual de excels (2x día)">Manual sync via spreadsheets (2× daily)</li>
+          <li data-es="Tasa de cancelación 12-15%">12-15% order cancellation rate</li>
+          <li data-es="2 FTE en reembolsos">2 FTE coordinators managing refunds</li>
+          <li data-es="Cero visibilidad general">No visibility into cross-channel demand</li>
+          <li data-es="Proveedores desinformados">Supplier forecasting based on guesswork</li>
+        </ul>
+      </div>
+      <div class="ba-divider">→</div>
+      <div class="ba-col after">
+        <div class="ba-label" data-es="Después de SOLVR">After SOLVR</div>
+        <ul class="ba-list">
+          <li data-es="Datos 100% integrados en BigQuery">Single source of truth in BigQuery</li>
+          <li data-es="Sincronía real bajo 3s">Real-time sync in under 3 seconds</li>
+          <li data-es="0% en índice de sobreventa">0% oversell rate since launch</li>
+          <li data-es="Staff transicionado al éxito de ventas">Coordinators reassigned to growth ops</li>
+          <li data-es="Panel general en todos los canales">Cross-channel analytics dashboard</li>
+          <li data-es="Auto-gatillos informativos a proveedores">Automated reorder triggers for suppliers</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE APPROACH -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>enfoque</span><span class='red'>.</span>">The <span class="serif">approach</span><span class="red">.</span></h2>
+    <p data-es="Elegimos <strong>Temporal</strong> como el motor porque sincronizar esto es distribución de sistemas en un CRUD. Temporal provee resistencia base a retrocesos vía la técnica Saga.">We chose <strong>Temporal</strong> as the workflow engine because inventory sync is a distributed systems problem disguised as a simple CRUD operation. Orders arrive asynchronously from six channels. Stock reservations need to be atomic. Failures need to be retried without double-counting. Temporal gave us durable execution with saga-pattern rollbacks out of the box.</p>
+
+    <h3 data-es="Arquitectura de <span class='serif'>Sistema</span>">System <span class="serif">architecture</span></h3>
+    <div class="arch-diagram">
+      <div class="arch-label" data-es="Pipeline Sincronizador">Sync pipeline</div>
+      <div class="arch-row-label" data-es="Entrada · webhooks de canales">Inbound · channel webhooks</div>
+      <div class="arch-row">
+        <div class="arch-node">Shopify</div>
+        <div class="arch-connector">→</div>
+        <div class="arch-node">MercadoLibre</div>
+        <div class="arch-connector">→</div>
+        <div class="arch-node">Amazon</div>
+        <div class="arch-connector">→</div>
+        <div class="arch-node">Rappi</div>
+        <div class="arch-connector">→</div>
+        <div class="arch-node">Cornershop</div>
+        <div class="arch-connector">→</div>
+        <div class="arch-node">Wholesale</div>
+      </div>
+      <div class="arch-row-label" data-es="Procesamiento · Temporal">Processing · Temporal workflows</div>
+      <div class="arch-row" style="justify-content:center">
+        <div class="arch-node hub">Temporal Engine</div>
+        <div class="arch-connector">↔</div>
+        <div class="arch-node store">BigQuery</div>
+      </div>
+      <div class="arch-row-label" data-es="Salida · Propagación de nivel">Outbound · stock level propagation</div>
+      <div class="arch-row">
+        <div class="arch-node">Shopify</div>
+        <div class="arch-connector">←</div>
+        <div class="arch-node">MercadoLibre</div>
+        <div class="arch-connector">←</div>
+        <div class="arch-node">Amazon</div>
+        <div class="arch-connector">←</div>
+        <div class="arch-node">Rappi</div>
+        <div class="arch-connector">←</div>
+        <div class="arch-node">Cornershop</div>
+        <div class="arch-connector">←</div>
+        <div class="arch-node">Wholesale</div>
+      </div>
+    </div>
+
+    <p data-es="Cuando una venta entra, el webhook lo sube. <strong>BigQuery baja el stock</strong> y manda reajustar los otros canales.">When an order is placed on any channel, a webhook fires into our ingestion layer. Temporal picks up the event, <strong>decrements the central stock in BigQuery</strong>, then propagates the updated count to all five other channels. The saga pattern ensures that if any channel's API fails to update, the system retries with exponential backoff — and if it truly fails, rolls back the change and alerts the ops team.</p>
+    <p data-es="Construimos una <strong>reserva 15 min de producto</strong> interna evitando que se pelearan la última unidad.">We also built a <strong>stock reservation system</strong>: when a customer adds an item to their cart on any channel, we hold a soft reservation for 15 minutes. This prevents the race condition where two customers on different platforms "buy" the last unit simultaneously.</p>
+
+    <h3 data-es="Cronología de <span class='serif'>entrega</span>">Delivery <span class="serif">timeline</span></h3>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semana 1–2 / Mapeo">Weeks 1–2 / Map</div>
+        <div class="timeline-desc" data-es="Auditamos APIs y <strong>su disparidad total</strong>. Hubo que definir un patrón uniforme a base de datos.">Audited all six channel APIs. Documented rate limits, webhook payloads, and inventory data models. <strong>Every channel was different</strong> — MercadoLibre uses XML, Rappi uses GraphQL, Amazon FBA has its own inventory management.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semana 3–4 / Diseño">Weeks 3–4 / Design</div>
+        <div class="timeline-desc" data-es="Se implementó la táctica saga para temporal y la canalización que abstrae al modelo genérico unificador.">Designed the canonical inventory schema in BigQuery. Built the Temporal workflow graph with <strong>saga-pattern compensation</strong>. Defined the channel adapter interface — each channel gets its own adapter that normalizes data to our schema.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semana 5–7 / Construcción">Weeks 5–7 / Build</div>
+        <div class="timeline-desc" data-es="Desarrollo de los 6 adaptadores que usan la data temporal usando python y cola de mensajes para escalado horizontal, probado a un x2 de tráfico real.">Built six channel adapters in Python. Implemented the Temporal workflows with <strong>retry policies, dead-letter queues, and the soft-reservation system</strong>. Load-tested with synthetic traffic simulating 2× peak volume.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semana 8–9 / Pruebas">Weeks 8–9 / Stage + Test</div>
+        <div class="timeline-desc" data-es="Ejecución de test sombrado en los 6 servidores detectando y solucionando problemas minúsculos y lógicos por canales distintos.">Ran in shadow mode alongside the manual process for 12 days. Caught and fixed 4 edge cases: <strong>Amazon FBA split shipments</strong>, MercadoLibre promotional holds, Cornershop substitution logic, and wholesale minimum-order quantities.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semana 10 / Entrega">Week 10 / Ship</div>
+        <div class="timeline-desc" data-es="Apagamos todo, pusimos SOLVR <strong>Cero sobreventas desde el día 1.</strong> Cero desde entonces.">Cut over to production. Killed the spreadsheet process. <strong>Zero oversells on day one.</strong> Zero since.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE STACK -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>stack</span><span class='red'>.</span>">The <span class="serif">stack</span><span class="red">.</span></h2>
+    <p data-es="Temporal dio alta compatibilidad. BigQuery analítica en tiempo real de operaciones diarias.">Temporal gave us durable, fault-tolerant execution. BigQuery gave us a real-time analytical layer on top of the operational data.</p>
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="stack-name">Temporal</div>
+        <div class="stack-role" data-es="Control de flujo">Workflow orchestration + sagas</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">BigQuery</div>
+        <div class="stack-role" data-es="Memoria de producto global">Central inventory store</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Shopify API</div>
+        <div class="stack-role" data-es="Adaptador del portal matriz">DTC channel adapter</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Python</div>
+        <div class="stack-role" data-es="Puentes al backend">Channel adapters + workers</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Redis</div>
+        <div class="stack-role" data-es="Retenciones locales de 15mins">Soft reservation cache</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Grafana</div>
+        <div class="stack-role" data-es="Observabilidad del performance">Monitoring + alerting</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE RESULT -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>resultado</span><span class='red'>.</span>">The <span class="serif">result</span><span class="red">.</span></h2>
+    <p data-es="La métrica de 'Vendido sin inventario' pasó a <em>cero</em> absoluto y cortó la fuga anual.">Stock-outs dropped by <strong>83%</strong>. Order cancellations due to overselling went from 12-15% to <em>zero</em>. Literally zero — the system has not oversold a single item since launch.</p>
+    <p data-es="Los equipos manuales re-alocaron esfuerzos en expansión de la firma permitiendo apertura en dos ramas adicionales (Uber Eats e iFood).">The two coordinators who spent their days processing refunds and apology emails were reassigned to <strong>supplier development and new channel expansion</strong>. Mercado Verde is now evaluating two additional channels (Uber Eats and iFood) — something that would have been operationally impossible before.</p>
+    <p data-es="Se descubrió a un nivel general métricas valiosas como que se venden los mismos de X o Y artículo en A canal sobre el B. Permitiendo nuevas estrategias directivas sobre esto.">The BigQuery analytics layer also unlocked something unexpected: <strong>cross-channel demand intelligence</strong>. For the first time, Mercado Verde can see that organic honey sells 3× faster on Rappi than MercadoLibre, and adjust pricing and inventory allocation dynamically.</p>
+
+    <div class="case-quote">
+      <blockquote data-es="Teníamos pavor al Buen Fin de antes. El último procesamos <em>14,000 órdenes sin fallas</em> en su stock en los 6 lados, es magia e innovación juntas.">"We used to dread holidays because of oversells. Last Buen Fin we processed <em>14,000 orders across all six channels</em> with zero cancellations. That's never happened before."</blockquote>
+      <div class="quote-author" data-es="— CEO, Mercado Verde">— CEO, Mercado Verde</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CASE NAV -->
+<div class="case-nav">
+  <a href="case-study-02.html" class="case-nav-item">
+    <div class="case-nav-label" data-es="<span class='case-nav-arrow'>←</span> Previo · 02"><span class="case-nav-arrow">←</span> Previous · 02</div>
+    <div class="case-nav-title" data-es="Agente IA de filtrado de 200 emails">AI agent that <span class="serif">triages</span> 200 emails</div>
+  </a>
+  <a href="case-study-04.html" class="case-nav-item" style="text-align:right">
+    <div class="case-nav-label" data-es="Próximo · 04 <span class='case-nav-arrow'>→</span>">Next · 04 <span class="case-nav-arrow">→</span></div>
+    <div class="case-nav-title" data-es="Agente CallCenter captura <span class='serif'>ventas perdidas</span>">AI voice agent turns <span class="serif">missed calls</span> into bookings</div>
+  </a>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">SOLVR<span class="dot"></span></div>
+  <div class="footer-contact">
+    <a href="mailto:contact@solvr.cloud">contact@solvr.cloud</a>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/company/solvr" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <span data-es="Ciudad de México">Mexico City</span>
+  </div>
+</footer>
+<div class="footer-bottom">
+  <span data-es="© 2026 SOLVR.">© 2026 SOLVR.</span>
+</div>
+
+<script>
+(function(){
+  if(window.matchMedia('(hover:none),(pointer:coarse)').matches) return;
+  const ring=document.getElementById('cursorRing'),dot=document.getElementById('cursorDot'),label=document.getElementById('cursorLabel');
+  if(!ring||!dot) return;
+  let mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  window.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.transform=`translate(${mx}px,${my}px)translate(-50%,-50%)`});
+  (function loop(){rx+=(mx-rx)*.18;ry+=(my-ry)*.18;ring.style.transform=`translate(${rx}px,${ry}px)translate(-50%,-50%)`;requestAnimationFrame(loop)})();
+  [{sel:'a,button,.nav-cta',label:'◉ CLICK'},{sel:'.stack-card',label:'◉ STACK'},{sel:'.case-stat',label:'◉ DATA'},{sel:'blockquote',label:'◉ QUOTE'},{sel:'.channel-card',label:'◉ CHANNEL'},{sel:'.arch-node',label:'◉ SYSTEM'}].forEach(({sel,label:t})=>{
+    document.querySelectorAll(sel).forEach(el=>{
+      el.addEventListener('mouseenter',()=>{ring.classList.add('is-hover');dot.classList.add('is-hover');label.textContent=t});
+      el.addEventListener('mouseleave',()=>{ring.classList.remove('is-hover');dot.classList.remove('is-hover')});
+    });
+  });
+  window.addEventListener('mousedown',()=>ring.classList.add('is-click'));
+  window.addEventListener('mouseup',()=>ring.classList.remove('is-click'));
+  window.addEventListener('mouseleave',()=>{ring.style.opacity='0';dot.style.opacity='0'});
+  window.addEventListener('mouseenter',()=>{ring.style.opacity='1';dot.style.opacity='1'});
+})();
+</script>
+<script src="anim.js"></script>
+<script src="lang.js"></script>
+</body>
+</html>

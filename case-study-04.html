@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SOLVR. — Case Study 04 · Clandestina 74</title>
+<meta name="description" content="How SOLVR built an AI voice reservation agent for Clandestina 74, a fine dining restaurant in Guanajuato — rescuing MXN $20-50K per week in lost revenue from missed phone calls.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700;800;900&family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bone:#F9F8F0;--ink:#100F0E;--red:#D33C2D;--red-dark:#a82e22;
+  --grey:#9A9893;--tan:#A48466;--tan-light:#c9b39a;
+  --line:#100F0E;--line-soft:rgba(16,15,14,.12);--ink-dim:#4a4845;
+  --cream:#efecd9;
+  --display:'Bebas Neue','Archivo',sans-serif;
+  --brand:'Bebas Neue','Archivo Black',sans-serif;
+  --sans:'Archivo',system-ui,sans-serif;
+  --serif:'Instrument Serif',Georgia,serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bone);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;scroll-behavior:smooth}
+::selection{background:var(--red);color:var(--bone)}
+
+/* CURSOR */
+@media(hover:hover)and(pointer:fine){html,body,a,button,*{cursor:none!important}}
+.cursor-ring{position:fixed;top:0;left:0;width:36px;height:36px;border:1.5px solid var(--ink);border-radius:50%;pointer-events:none;z-index:10000;will-change:transform;transition:width .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1),border-color .2s,background-color .2s,opacity .2s;mix-blend-mode:difference;background:transparent}
+.cursor-ring::before,.cursor-ring::after{content:"";position:absolute;background:var(--bone);transition:all .25s}
+.cursor-ring::before{top:50%;left:-6px;right:-6px;height:1px;transform:translateY(-50%)}
+.cursor-ring::after{left:50%;top:-6px;bottom:-6px;width:1px;transform:translateX(-50%)}
+.cursor-dot{position:fixed;top:0;left:0;width:6px;height:6px;background:var(--red);border-radius:0;pointer-events:none;z-index:10001;will-change:transform;transition:width .18s,height .18s,background-color .18s,opacity .2s}
+.cursor-ring.is-hover{width:88px;height:88px;border-color:var(--red);border-width:1.5px;mix-blend-mode:normal;background:rgba(211,60,45,.06)}
+.cursor-ring.is-hover::before,.cursor-ring.is-hover::after{background:var(--red)}
+.cursor-ring.is-hover::before{left:-12px;right:-12px}
+.cursor-ring.is-hover::after{top:-12px;bottom:-12px}
+.cursor-dot.is-hover{width:0;height:0;opacity:0}
+.cursor-ring.is-click{width:20px;height:20px;border-color:var(--red);mix-blend-mode:normal}
+.cursor-label{position:absolute;top:100%;left:50%;transform:translateX(-50%)translateY(16px);font-family:var(--mono);font-size:9px;letter-spacing:.22em;color:var(--red);text-transform:uppercase;white-space:nowrap;opacity:0;transition:opacity .25s;font-weight:500;padding:3px 8px;background:var(--bone);border:1px solid var(--red)}
+.cursor-ring.is-hover .cursor-label{opacity:1;transition-delay:.05s}
+@media(hover:none),(pointer:coarse){.cursor-ring,.cursor-dot{display:none}html,body,*{cursor:auto!important}}
+
+/* PAPER TEXTURE */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1000;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0.063  0 0 0 0 0.059  0 0 0 0 0.055  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.45'/></svg>");opacity:.35;mix-blend-mode:multiply}
+
+/* TICKER */
+.ticker-bar{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--ink);color:var(--bone);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:8px 0;overflow:hidden}
+.ticker-track{display:flex;gap:52px;white-space:nowrap;animation:tick 60s linear infinite;width:max-content}
+.ticker-track span{display:inline-flex;align-items:center;gap:14px}
+.ticker-track span::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* NAV */
+nav{position:fixed;top:34px;left:0;right:0;z-index:90;display:flex;justify-content:space-between;align-items:center;padding:18px 40px;background:rgba(249,248,240,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.logo{font-family:var(--brand);font-size:38px;letter-spacing:-.01em;display:inline-flex;align-items:baseline;line-height:.85;font-weight:400;text-decoration:none;color:var(--ink)}
+.logo .dot{display:inline-block;width:9px;height:9px;background:var(--red);margin-left:4px;transform:translateY(-1px)}
+.nav-links{display:flex;gap:36px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+.nav-links a{color:var(--ink);text-decoration:none;position:relative;padding:6px 0;transition:color .2s}
+.nav-links a:hover{color:var(--red)}
+.nav-links a .num{color:var(--grey);margin-right:8px;font-size:10px}
+.nav-cta{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;background:var(--ink);color:var(--bone);border:none;padding:12px 20px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .2s;font-weight:500;text-decoration:none}
+.nav-cta:hover{background:var(--red);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.nav-cta .sq{display:inline-block;width:6px;height:6px;background:var(--red)}
+.nav-cta:hover .sq{background:var(--bone)}
+
+/* CASE HERO */
+.case-hero{padding:clamp(120px,14vh,160px) clamp(20px,3vw,48px) 80px;border-bottom:2px solid var(--ink);position:relative;overflow:hidden}
+.case-hero::after{content:"04";position:absolute;right:-20px;bottom:-60px;font-family:var(--display);font-size:clamp(280px,30vw,500px);color:rgba(16,15,14,.04);line-height:.8;pointer-events:none;font-weight:400;letter-spacing:-.02em}
+.case-breadcrumb{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:48px;display:flex;align-items:center;gap:12px}
+.case-breadcrumb a{color:var(--ink-dim);text-decoration:none;transition:color .2s}
+.case-breadcrumb a:hover{color:var(--red)}
+.case-breadcrumb .sep{color:var(--red)}
+.case-hero-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:64px;align-items:end}
+.case-hero-title h1{font-family:var(--display);font-weight:400;font-size:clamp(56px,8vw,130px);line-height:.92;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:24px}
+.case-hero-title h1 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em}
+.case-hero-title h1 .red{color:var(--red)}
+.case-hero-subtitle{font-family:var(--serif);font-size:clamp(18px,2vw,26px);line-height:1.35;color:var(--ink-dim);max-width:600px}
+.case-hero-subtitle em{color:var(--red);font-weight:400}
+.case-hero-meta{display:flex;flex-direction:column;gap:20px}
+.case-hero-meta .meta-item{padding-bottom:16px;border-bottom:1px solid var(--line-soft)}
+.case-hero-meta .meta-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.case-hero-meta .meta-label::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+.case-hero-meta .meta-value{font-family:var(--display);font-weight:400;font-size:28px;letter-spacing:-.005em;text-transform:uppercase;line-height:1}
+.case-hero-meta .meta-value .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none}
+
+/* STATS BAND */
+.case-stats{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid var(--ink);background:var(--ink);color:var(--bone)}
+.case-stat{padding:48px 36px;border-right:1px solid rgba(249,248,240,.08);text-align:center}
+.case-stat:last-child{border-right:none}
+.case-stat-num{font-family:var(--display);font-weight:400;font-size:clamp(56px,6vw,88px);line-height:.9;margin-bottom:8px;letter-spacing:-.01em}
+.case-stat-num .red{color:var(--red)}
+.case-stat-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--grey)}
+
+/* CASE BODY */
+.case-body{max-width:920px;margin:0 auto;padding:100px clamp(20px,3vw,48px)}
+.case-body h2{font-family:var(--display);font-weight:400;font-size:clamp(40px,5vw,72px);line-height:.92;text-transform:uppercase;letter-spacing:-.005em;margin-bottom:32px}
+.case-body h2 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em}
+.case-body h2 .red{color:var(--red)}
+.case-body h3{font-family:var(--display);font-weight:400;font-size:clamp(24px,3vw,36px);line-height:.95;text-transform:uppercase;margin-bottom:20px;margin-top:56px;letter-spacing:-.005em}
+.case-body h3 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none}
+.case-body p{font-size:16px;line-height:1.75;color:var(--ink-dim);margin-bottom:24px;max-width:720px}
+.case-body p strong{color:var(--ink);font-weight:600}
+.case-body p em{color:var(--red);font-style:normal;font-weight:500}
+.case-section{padding-bottom:80px;margin-bottom:80px;border-bottom:1px solid var(--line-soft)}
+.case-section:last-child{border-bottom:none;margin-bottom:0}
+
+/* QUOTE BLOCK */
+.case-quote{border-left:4px solid var(--red);padding:32px 0 32px 36px;margin:48px 0}
+.case-quote blockquote{font-family:var(--serif);font-size:clamp(22px,2.4vw,32px);line-height:1.3;font-weight:400}
+.case-quote blockquote em{color:var(--red);font-style:italic}
+.case-quote .quote-author{margin-top:20px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+
+/* STACK LIST */
+.stack-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:36px 0 48px}
+.stack-card{border:1px solid var(--ink);padding:24px;position:relative;transition:all .3s;cursor:default}
+.stack-card:hover{background:var(--cream);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.stack-card .stack-name{font-family:var(--display);font-weight:400;font-size:28px;text-transform:uppercase;line-height:1;margin-bottom:8px;letter-spacing:-.005em}
+.stack-card .stack-role{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+
+/* FLOW DIAGRAM */
+.flow-diagram{margin:48px 0;padding:36px;border:1px solid var(--ink);background:var(--cream);position:relative}
+.flow-diagram-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.flow-diagram-label::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+.flow-steps{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.flow-step{padding:16px 20px;background:var(--bone);border:1px solid var(--ink);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-align:center;min-width:120px}
+.flow-step.active{background:var(--ink);color:var(--bone)}
+.flow-step.highlight{background:var(--red);color:var(--bone);border-color:var(--red)}
+.flow-arrow{font-family:var(--display);font-size:24px;color:var(--red);padding:0 8px;flex-shrink:0}
+
+/* TIMELINE */
+.timeline{margin:48px 0;position:relative}
+.timeline::before{content:"";position:absolute;left:20px;top:0;bottom:0;width:1px;background:var(--line-soft)}
+.timeline-item{padding-left:56px;margin-bottom:36px;position:relative}
+.timeline-item::before{content:"";position:absolute;left:14px;top:6px;width:13px;height:13px;border:2px solid var(--red);background:var(--bone)}
+.timeline-item:last-child::before{background:var(--red)}
+.timeline-week{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--red);margin-bottom:6px;font-weight:500}
+.timeline-desc{font-size:15px;line-height:1.65;color:var(--ink-dim)}
+.timeline-desc strong{color:var(--ink);font-weight:600}
+
+/* BEFORE / AFTER */
+.before-after{display:grid;grid-template-columns:1fr auto 1fr;gap:0;margin:48px 0;border:1px solid var(--ink)}
+.ba-col{padding:32px}
+.ba-col.before{background:var(--cream)}
+.ba-col.after{background:var(--ink);color:var(--bone)}
+.ba-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.ba-label::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+.ba-col.before .ba-label{color:var(--ink-dim)}
+.ba-col.after .ba-label{color:var(--grey)}
+.ba-list{list-style:none}
+.ba-list li{font-size:14px;line-height:1.7;padding:6px 0;border-bottom:1px solid var(--line-soft);display:flex;align-items:baseline;gap:10px}
+.ba-col.after .ba-list li{border-color:rgba(249,248,240,.08)}
+.ba-list li::before{content:"×";font-family:var(--mono);font-size:12px;color:var(--red);flex-shrink:0}
+.ba-col.after .ba-list li::before{content:"✓";color:var(--red)}
+.ba-divider{width:48px;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:28px;color:var(--bone);writing-mode:vertical-lr}
+
+/* IMPACT CARDS */
+.impact-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:48px 0}
+.impact-card{border:1px solid var(--ink);padding:32px;position:relative;transition:all .3s}
+.impact-card:hover{background:var(--cream);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.impact-card .impact-num{font-family:var(--display);font-weight:400;font-size:56px;color:var(--red);line-height:.9;margin-bottom:12px}
+.impact-card .impact-label{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:8px}
+.impact-card .impact-desc{font-size:14px;line-height:1.6;color:var(--ink-dim)}
+
+/* CASE NAV */
+.case-nav{border-top:2px solid var(--ink);display:grid;grid-template-columns:1fr 1fr}
+.case-nav-item{padding:80px 48px;display:flex;flex-direction:column;gap:12px;transition:background .35s;cursor:pointer;text-decoration:none;color:var(--ink)}
+.case-nav-item:first-child{border-right:1px solid var(--line-soft)}
+.case-nav-item:hover{background:var(--cream)}
+.case-nav-label{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);display:flex;align-items:center;gap:8px}
+.case-nav-title{font-family:var(--display);font-weight:400;font-size:clamp(24px,3.5vw,48px);text-transform:uppercase;line-height:.92;letter-spacing:-.005em}
+.case-nav-title .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em;color:var(--red)}
+.case-nav-arrow{font-size:32px;color:var(--red);transition:transform .3s}
+.case-nav-item:hover .case-nav-arrow{transform:translateX(8px)}
+.case-nav-item:first-child:hover .case-nav-arrow{transform:translateX(-8px)}
+
+/* FOOTER */
+footer{padding:18px 40px;display:flex;justify-content:space-between;align-items:center;gap:24px;background:var(--bone);border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.footer-brand{font-family:var(--brand);font-size:28px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;display:inline-flex;align-items:baseline;font-weight:400}
+.footer-brand .dot{display:inline-block;width:7px;height:7px;background:var(--red);margin-left:3px;transform:translateY(-1px)}
+.footer-contact{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap}
+.footer-contact a{color:var(--ink);text-decoration:none;transition:color .2s}
+.footer-contact a:hover{color:var(--red)}
+.footer-contact .sep{opacity:.4}
+.footer-bottom{padding:10px 40px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--ink-dim);text-transform:uppercase;background:var(--bone)}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  nav{padding:12px 18px;top:28px}
+  .logo{font-size:28px}
+  .nav-links{display:none}
+  .nav-cta{padding:9px 14px;font-size:10px}
+  .case-hero{padding:104px 20px 48px}
+  .case-hero-grid{grid-template-columns:1fr;gap:32px}
+  .case-hero-title h1{font-size:clamp(52px,11vw,84px)}
+  .case-hero-meta{flex-direction:row;flex-wrap:wrap;gap:16px}
+  .case-hero-meta .meta-item{flex:1;min-width:140px}
+  .case-stats{grid-template-columns:repeat(2,1fr)}
+  .case-stat{border-bottom:1px solid rgba(249,248,240,.08)}
+  .case-body{padding:60px 20px}
+  .stack-grid{grid-template-columns:1fr}
+  .impact-grid{grid-template-columns:1fr}
+  .before-after{grid-template-columns:1fr}
+  .ba-divider{width:100%;height:40px;writing-mode:horizontal-tb}
+  .flow-steps{flex-direction:column;align-items:stretch}
+  .flow-arrow{transform:rotate(90deg);text-align:center;padding:4px 0}
+  .case-nav{grid-template-columns:1fr}
+  .case-nav-item:first-child{border-right:none;border-bottom:1px solid var(--line-soft)}
+  .case-nav-item{padding:48px 20px}
+  footer{padding:14px 20px;gap:12px;justify-content:center;text-align:center}
+  .footer-brand{font-size:22px}
+  .footer-contact{font-size:10px;gap:10px;justify-content:center}
+  .footer-bottom{gap:8px;padding:10px 20px;font-size:9px;text-align:center;justify-content:center}
+}
+@media(max-width:480px){
+  .case-hero{padding:92px 16px 36px}
+  .case-hero-title h1{font-size:clamp(44px,13vw,64px)}
+  .case-stats{grid-template-columns:1fr}
+  .case-stat{padding:32px 24px}
+  .case-body h2{font-size:clamp(32px,8vw,48px)}
+  .stack-grid{grid-template-columns:1fr}
+  .impact-grid{grid-template-columns:1fr}
+  footer{gap:10px;padding:12px 16px}
+  .footer-brand{font-size:20px}
+  .footer-contact{font-size:9.5px;gap:8px}
+}
+
+/* LANG TOGGLE */
+.lang-btn{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;background:transparent;color:var(--ink);border:1.5px solid var(--ink);padding:8px 14px;cursor:pointer;transition:all .2s;font-weight:600;margin-left:12px;line-height:1}
+.lang-btn:hover{background:var(--ink);color:var(--bone)}
+@media(max-width:900px){.lang-btn{padding:7px 10px;font-size:10px;margin-left:8px}}
+
+/* SCROLL HINT */
+.scroll-hint{display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 0;cursor:pointer;text-decoration:none;color:var(--ink-dim);transition:color .2s}
+.scroll-hint:hover{color:var(--red)}
+.scroll-hint-text{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.scroll-hint-arrow{font-size:24px;animation:scrollBounce 2s ease-in-out infinite;color:var(--red)}
+@keyframes scrollBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div class="cursor-ring" id="cursorRing"><span class="cursor-label" id="cursorLabel">◉ SOLVR</span></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<!-- TICKER -->
+<div class="ticker-bar">
+  <div class="ticker-track">
+    <span data-es="Caso 04">Case Study 04</span><span>Clandestina 74</span><span data-es="Reservaciones por Voz IA">AI Voice Reservations</span><span data-es="MXN $20–50K/sem rescatados">MXN $20–50K/wk rescued</span><span data-es="0% llamadas perdidas">0% missed calls</span><span>AI Voice · WhatsApp · Google</span>
+    <span data-es="Caso 04">Case Study 04</span><span>Clandestina 74</span><span data-es="Reservaciones por Voz IA">AI Voice Reservations</span><span data-es="MXN $20–50K/sem rescatados">MXN $20–50K/wk rescued</span><span data-es="0% llamadas perdidas">0% missed calls</span><span>AI Voice · WhatsApp · Google</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="solvr-portfolio (1).html" class="logo">SOLVR<span class="dot"></span></a>
+  <div class="nav-links">
+    <a href="solvr-portfolio (1).html#work" data-es="<span class='num'>01</span>Trabajo"><span class="num">01</span>Work</a>
+    <a href="solvr-portfolio (1).html#services" data-es="<span class='num'>02</span>Servicios"><span class="num">02</span>Services</a>
+    <a href="solvr-portfolio (1).html#process" data-es="<span class='num'>03</span>Proceso"><span class="num">03</span>Process</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:0">
+    <a href="solvr-portfolio (1).html#contact" class="nav-cta" data-es="<span class='sq'></span> Iniciar Proyecto <span>→</span>"><span class="sq"></span> Start a Project <span>→</span></a>
+    <button class="lang-btn" id="langToggle" aria-label="Cambiar a Español">ES</button>
+  </div>
+</nav>
+
+<!-- CASE HERO -->
+<section class="case-hero">
+  <div class="case-breadcrumb">
+    <a href="solvr-portfolio (1).html">SOLVR.</a>
+    <span class="sep">→</span>
+    <a href="solvr-portfolio (1).html#work" data-es="Trabajo">Work</a>
+    <span class="sep">→</span>
+    <span data-es="Caso 04">Case 04</span>
+  </div>
+  <div class="case-hero-grid">
+    <div class="case-hero-title">
+      <h1 data-es="Agente de voz IA convierte <span class='serif'>llamadas perdidas</span> en reservaciones<span class='red'>.</span>">AI voice agent turns <span class="serif">missed calls</span> into reservations<span class="red">.</span></h1>
+      <div class="case-hero-subtitle" data-es="Clandestina 74, un destino de alta cocina en Guanajuato, perdía <em>MXN $20–50K cada semana</em> porque nadie podía contestar el teléfono durante el servicio. Les dimos un asistente que nunca está ocupado.">Clandestina 74, a fine dining destination in Guanajuato, was losing <em>MXN $20–50K every week</em> because nobody could answer the phone during service. We gave them an assistant that never gets busy.</div>
+    </div>
+    <div class="case-hero-meta">
+      <div class="meta-item">
+        <div class="meta-label" data-es="Cliente">Client</div>
+        <div class="meta-value">Clandestina 74</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label" data-es="Ubicación">Location</div>
+        <div class="meta-value" data-es="<span class='serif'>Guanajuato, MX</span>"><span class="serif">Guanajuato, MX</span></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Stack</div>
+        <div class="meta-value">AI Voice · WhatsApp</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label" data-es="Plazo">Timeline</div>
+        <div class="meta-value" data-es="3 <span class='serif'>semanas</span>">3 <span class="serif">weeks</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCROLL HINT -->
+<a href="#case-body" class="scroll-hint" data-es="<span class='scroll-hint-text'>Leer más</span><span class='scroll-hint-arrow'>↓</span>">
+  <span class="scroll-hint-text">Read more</span>
+  <span class="scroll-hint-arrow">↓</span>
+</a>
+
+<!-- STATS BAND -->
+<section class="case-stats">
+  <div class="case-stat">
+    <div class="case-stat-num"><span class="red">$50K</span></div>
+    <div class="case-stat-label" data-es="Ingresos rescatados / semana">Revenue rescued / week</div>
+  </div>
+  <div class="case-stat">
+    <div class="case-stat-num"><span class="red">0</span>%</div>
+    <div class="case-stat-label" data-es="Llamadas perdidas">Missed calls</div>
+  </div>
+  <div class="case-stat">
+    <div class="case-stat-num"><span class="red">3</span> wks</div>
+    <div class="case-stat-label" data-es="Lanzado en">Deployed in</div>
+  </div>
+  <div class="case-stat">
+    <div class="case-stat-num"><span class="red">24</span>/7</div>
+    <div class="case-stat-label" data-es="Disponibilidad">Availability</div>
+  </div>
+</section>
+
+<!-- CASE BODY -->
+<div class="case-body" id="case-body">
+
+  <!-- THE PROBLEM -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>problema</span><span class='red'>.</span>">The <span class="serif">problem</span><span class="red">.</span></h2>
+    <p data-es="Clandestina 74, restaurante fine-dining en Guanajuato centro, tenía un problema que no figuraba en balance. En noches de alta demanda (Viernes a Domingo) su equipo estaba tan ocupado que <strong>nadie contestaba el teléfono</strong>.">Clandestina 74, a fine dining restaurant in the heart of Guanajuato's historic centre, had a problem that never showed up on the balance sheet. During their busiest nights — Friday through Sunday — the team was so occupied serving guests that <strong>nobody could pick up the phone</strong>.</p>
+    <p data-es="Quienes llamaban para reserva solo escuchaban timbres, así que colgaban y agendaban en otro lado. Con la sala llena, el dueño sentía que el negocio iba bien — pero <em>no tenía idea del dinero que dejaba ir</em>.">People calling to make a reservation heard ringing, then nothing. So they hung up and called somewhere else. The owner had a full dining room and felt like business was good — but he had <em>no idea how much money was walking out the door</em> through unanswered calls.</p>
+    <p data-es="Cuando revisamos, contando volúmenes y promedios, el número lo golpeó: <strong>de $20,000 a $50,000 MXN en fugas cada semana</strong>. No por mala comida o servicio, solo por no contestar a tiempo.">When we sat down together and actually counted it — tracking call volume, average party size, and average ticket — the number was staggering: <strong>between MXN $20,000 and $50,000 in lost revenue every single week</strong>. Not because the food was bad. Not because the service was slow. Simply because the phone rang and nobody could answer it.</p>
+
+    <div class="case-quote">
+      <blockquote data-es="Teníamos cero idea de cuántos lugares perdíamos. <em>Este teléfono era nuestro peor enemigo</em> — y nunca lo notamos.">"We didn't even realize how many reservations we were losing until they showed us the data. <em>The phone was our biggest leak</em> — and we never knew."</blockquote>
+      <div class="quote-author" data-es="— Dueño, Clandestina 74">— Owner, Clandestina 74</div>
+    </div>
+  </div>
+
+  <!-- BEFORE / AFTER -->
+  <div class="case-section">
+    <h2 data-es="Antes <span class='red'>&</span> <span class='serif'>después</span><span class='red'>.</span>">Before <span class="red">&</span> <span class="serif">after</span><span class="red">.</span></h2>
+    <div class="before-after">
+      <div class="ba-col before">
+        <div class="ba-label" data-es="Antes de SOLVR">Before SOLVR</div>
+        <ul class="ba-list">
+          <li data-es="Teléfono timbrando horas pico">Phone rang unanswered during peak hours</li>
+          <li data-es="$20–50K de MXN perdido semanal">MXN $20–50K lost per week in unbooked tables</li>
+          <li data-es="Personal distraído de los clientes">Staff pulled away from guests to take calls</li>
+          <li data-es="Cero recordatorios automáticos">No reservation confirmations or reminders</li>
+          <li data-es="Reseñas al azar de google">Google reviews left to chance</li>
+          <li data-es="Cero métricas de todo">No data on call volume or conversion</li>
+        </ul>
+      </div>
+      <div class="ba-divider">→</div>
+      <div class="ba-col after">
+        <div class="ba-label" data-es="Después de SOLVR">After SOLVR</div>
+        <ul class="ba-list">
+          <li data-es="Todo capturado 24/7 de inmediato">Every call answered instantly, 24/7</li>
+          <li data-es="Oportunidades de reservación maximizadas">Zero missed reservation opportunities</li>
+          <li data-es="Staff enfocado 100% a la mesa">Staff 100% focused on in-house guests</li>
+          <li data-es="Automated confirmations / recuerdos">Automated confirmations + reminders</li>
+          <li data-es="Reseñas pedidas por WP tras visita">Post-visit review requests via WhatsApp</li>
+          <li data-es="Reportes métricos completos sobre conversión">Full analytics on call patterns + booking rates</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE APPROACH -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>enfoque</span><span class='red'>.</span>">The <span class="serif">approach</span><span class="red">.</span></h2>
+    <p data-es="Construimos un sistema inteligente que funge como <strong>Asistente Dedicado de Reservas</strong> — uno que jamás para a su hora de comida, no pide días, y está automático y veloz todo el tiempo.">We built a smart system that works like a <strong>dedicated reservations assistant</strong> — one that never gets busy, never takes a day off, and handles everything automatically.</p>
+    <p data-es="Cuando alguien marca, la IA levanta todo fluyendo como una <em>conversación natural</em> en español o inglés al vuelo. Coteja mesa vs horas reales, sugiere opciones sí algo falla, arregla lugares según la cantidad de invitados y confirma digitalmente.">When a customer calls, the AI picks up and has a <em>natural conversation</em> in Spanish. It checks table availability against Clandestina 74's live seating data, suggests alternative times if the preferred slot is full, handles party size logistics, and confirms the booking — all without any staff involvement.</p>
+
+    <h3 data-es="El <span class='serif'>Pipeline</span>">The <span class="serif">pipeline</span></h3>
+    <div class="flow-diagram">
+      <div class="flow-diagram-label" data-es="Flujo de Cita">Reservation flow</div>
+      <div class="flow-steps">
+        <div class="flow-step">Incoming Call</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step active">AI Voice Agent</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Availability Check</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step highlight">Booking Confirmed</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">SMS Reminder</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step active">Post-Visit Review</div>
+      </div>
+    </div>
+
+    <p data-es="Pero no terminaba en la reserva. Al par de días pos-visita envía un amable <strong>mensaje de texto / WhatsApp</strong> indagando por su experiencia, dándoles link directo a la review en Google. Cambiando la esperanza natural a una estrategia métrica y pasiva a 5-estrellas.">But we didn't stop at reservations. One to two days after each visit, the system automatically sends each guest a friendly <strong>WhatsApp or text message</strong> asking how their experience was — with a direct link to leave a Google review. This turned a passive hope ("maybe they'll review us") into an active, automated pipeline of 5-star reviews.</p>
+
+    <h3 data-es="Cronología de <span class='serif'>entrega</span>">Delivery <span class="serif">timeline</span></h3>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semana 1 / Auditado">Week 1 / Audit + Design</div>
+        <div class="timeline-desc" data-es="Acudimos in-house tres noches densas, midiendo hasta el último peso. Armamos los casos con el dueño basándonos a todas las ramificaciones.">Spent three evenings in the restaurant during peak service. Tracked call volume, measured missed calls, and calculated the <strong>revenue leak</strong>. Designed the voice agent conversation flow with the owner, mapping every scenario: walk-ins, large parties, special occasions, dietary requests.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semana 2 / Construcción">Week 2 / Build + Train</div>
+        <div class="timeline-desc" data-es="Armamos al agente IA en <strong>español natural, e inusualmente rápido</strong> en iteraciones, unimos la base de datos de los host con el teléfono general y le incluimos secuencias de whats app posteriores.">Built the AI voice agent with <strong>natural Spanish conversation</strong> capabilities. Connected to the existing reservation book (migrated from paper to a simple digital system). Built the availability checking logic and the <strong>WhatsApp post-visit follow-up</strong> sequence. Trained the model on 50+ scripted scenarios.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semana 3 / Salida">Week 3 / Test + Launch</div>
+        <div class="timeline-desc" data-es="Pruebas paralelas donde IA respondía en audífono para auditar fiabilidad, <strong>cero errores de ruteo. Salimos a vivo previniendo fuga desde el jueves en la noche.</strong>">Ran the system in parallel for 4 days — every call went to AI and a staff member listened in. <strong>Zero booking errors.</strong> Customers couldn't tell it wasn't a person. Went fully live on Thursday before the weekend rush.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE STACK -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>stack</span><span class='red'>.</span>">The <span class="serif">stack</span><span class="red">.</span></h2>
+    <p data-es="Simple, inquebrantable, y todo sin ahogar al negocio local con gastos directores.">Simple, reliable, and built so the owner can understand what's happening without needing a technical background.</p>
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="stack-name">AI Voice</div>
+        <div class="stack-role" data-es="Procesamiento y ruteo NL">Natural language call handling</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">WhatsApp API</div>
+        <div class="stack-role" data-es="Enganche Pos-visita">Post-visit review requests</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Google Business</div>
+        <div class="stack-role" data-es="Pipeline de calificación">Review generation pipeline</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Twilio</div>
+        <div class="stack-role" data-es="Sistema base celular">Telephony + SMS confirmations</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">n8n</div>
+        <div class="stack-role" data-es="Ruteos de lógica de nexo">Workflow orchestration</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Supabase</div>
+        <div class="stack-role" data-es="Control y disponibilidad">Reservation database + dashboard</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE IMPACT -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>impacto</span><span class='red'>.</span>">The <span class="serif">impact</span><span class="red">.</span></h2>
+    <p data-es="Logrado justo el jueves para recibir todo el rush de fines. De inmediato:">The system was live by Thursday evening, just in time for the weekend rush. The results were immediate and dramatic.</p>
+    <div class="impact-grid">
+      <div class="impact-card">
+        <div class="impact-num">100%</div>
+        <div class="impact-label" data-es="Llamadas capturadas">Call answer rate</div>
+        <div class="impact-desc" data-es="Llamadas atendidas 2am y resueltas con gran profesionalismo a sus invitados.">Every single call answered on the first ring — during peak hours, weekends, holidays, and at 2am when someone spontaneously plans tomorrow's dinner.</div>
+      </div>
+      <div class="impact-card">
+        <div class="impact-num">$50K+</div>
+        <div class="impact-label" data-es="MXN rescatados a la semana">Weekly revenue rescued</div>
+        <div class="impact-desc" data-es="Lugares llenos y que se pagaron solos gracias al re-enfoque.">Tables that would have sat empty because the call went unanswered are now booked. The system paid for itself in the first weekend.</div>
+      </div>
+      <div class="impact-card">
+        <div class="impact-num">4.8★</div>
+        <div class="impact-label" data-es="Google rating (desde 4.3)">Google rating (from 4.3)</div>
+        <div class="impact-desc" data-es="WhatsApp generó automatización subiendo a números dorados el restaurante desde su incepción de solvr y no baja de ellos.">The automated post-visit WhatsApp sequence generated 40+ new Google reviews in the first month, lifting the average from 4.3 to 4.8 stars.</div>
+      </div>
+      <div class="impact-card">
+        <div class="impact-num">0 hrs</div>
+        <div class="impact-label" data-es="Tiempo fugado del personal">Staff time on phones</div>
+        <div class="impact-desc" data-es="La gente ahora está allí por los clientes sentados brindando mejor servicio, y el sistema por los que aún ni lo están.">The team is fully present for in-house guests. No more running to the back to answer a call while a table waits for their check.</div>
+      </div>
+    </div>
+
+    <div class="case-quote">
+      <blockquote data-es="Tres semanas pasaron, y no falla ninguna. <em>Es la mejor inversión hecha de seguro</em>.">"Three weeks later, every call gets answered. <em>Best investment we've made in years.</em>"</blockquote>
+      <div class="quote-author" data-es="— Dueño, Clandestina 74">— Owner, Clandestina 74</div>
+    </div>
+  </div>
+
+  <!-- THE RIPPLE EFFECT -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>efecto</span> domino<span class='red'>.</span>">The <span class="serif">ripple</span> effect<span class="red">.</span></h2>
+    <p data-es="Más que ventas o impacto en reviews fue la <strong>moral del personal</strong> por las nubes ante su enfoque en atender a los clientes de frente sin abrumarse.">The most unexpected impact wasn't the rescued revenue or the Google reviews — it was <strong>staff morale</strong>. The front-of-house team told us they used to dread the phone ringing during a packed Friday night. Now they can focus entirely on the guests in front of them.</p>
+    <p data-es="El jefe explora la fase 2 para manejo de eventos directos vía agente. Mismos pilares logran metas inusitadas.">The owner is now exploring a second phase: using the AI system to handle <em>catering inquiries and private event bookings</em>, which currently require 3-4 back-and-forth calls to finalize. The same architecture scales directly.</p>
+    <p data-es="De un fugado sin fondo, a un control total y métrico sobre un <strong>monstruo generador 24/7</strong> con 0 nóminas nuevas directas a su nómina de humanos locales.">From a business that didn't know it was leaking money, to one that captures <strong>every single opportunity</strong>, 24 hours a day, 7 days a week, without hiring a single additional person.</p>
+  </div>
+
+</div>
+
+<!-- CASE NAV -->
+<div class="case-nav">
+  <a href="case-study-03.html" class="case-nav-item">
+    <div class="case-nav-label" data-es="<span class='case-nav-arrow'>←</span> Previo · 03"><span class="case-nav-arrow">←</span> Previous · 03</div>
+    <div class="case-nav-title" data-es="Sincronía en 6 canales">Inventory sync across <span class="serif">six</span> channels</div>
+  </a>
+  <a href="solvr-portfolio (1).html#work" class="case-nav-item" style="text-align:right">
+    <div class="case-nav-label" data-es="Todos <span class='case-nav-arrow'>→</span>">All Cases <span class="case-nav-arrow">→</span></div>
+    <div class="case-nav-title" data-es="Regreso a <span class='serif'>portafolio</span>">Back to <span class="serif">work</span></div>
+  </a>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">SOLVR<span class="dot"></span></div>
+  <div class="footer-contact">
+    <a href="mailto:contact@solvr.cloud">contact@solvr.cloud</a>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/company/solvr" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <span data-es="Ciudad de México">Mexico City</span>
+  </div>
+</footer>
+<div class="footer-bottom">
+  <span data-es="© 2026 SOLVR.">© 2026 SOLVR.</span>
+</div>
+
+<script>
+(function(){
+  if(window.matchMedia('(hover:none),(pointer:coarse)').matches) return;
+  const ring=document.getElementById('cursorRing'),dot=document.getElementById('cursorDot'),label=document.getElementById('cursorLabel');
+  if(!ring||!dot) return;
+  let mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  window.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.transform=`translate(${mx}px,${my}px)translate(-50%,-50%)`});
+  (function loop(){rx+=(mx-rx)*.18;ry+=(my-ry)*.18;ring.style.transform=`translate(${rx}px,${ry}px)translate(-50%,-50%)`;requestAnimationFrame(loop)})();
+  [{sel:'a,button,.nav-cta',label:'◉ CLICK'},{sel:'.stack-card',label:'◉ STACK'},{sel:'.case-stat',label:'◉ DATA'},{sel:'blockquote',label:'◉ QUOTE'},{sel:'.impact-card',label:'◉ IMPACT'},{sel:'.flow-step',label:'◉ PIPELINE'}].forEach(({sel,label:t})=>{
+    document.querySelectorAll(sel).forEach(el=>{
+      el.addEventListener('mouseenter',()=>{ring.classList.add('is-hover');dot.classList.add('is-hover');label.textContent=t});
+      el.addEventListener('mouseleave',()=>{ring.classList.remove('is-hover');dot.classList.remove('is-hover')});
+    });
+  });
+  window.addEventListener('mousedown',()=>ring.classList.add('is-click'));
+  window.addEventListener('mouseup',()=>ring.classList.remove('is-click'));
+  window.addEventListener('mouseleave',()=>{ring.style.opacity='0';dot.style.opacity='0'});
+  window.addEventListener('mouseenter',()=>{ring.style.opacity='1';dot.style.opacity='1'});
+})();
+</script>
+<script src="anim.js"></script>
+<script src="lang.js"></script>
+</body>
+</html>

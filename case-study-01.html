@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SOLVR. — Case Study 01 · Northbeam</title>
+<meta name="description" content="How SOLVR replaced Northbeam's 14-step onboarding flow with a single webhook — saving 38 hours per week and lifting activation by 27%.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700;800;900&family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bone:#F9F8F0;--ink:#100F0E;--red:#D33C2D;--red-dark:#a82e22;
+  --grey:#9A9893;--tan:#A48466;--tan-light:#c9b39a;
+  --line:#100F0E;--line-soft:rgba(16,15,14,.12);--ink-dim:#4a4845;
+  --cream:#efecd9;
+  --display:'Bebas Neue','Archivo',sans-serif;
+  --brand:'Bebas Neue','Archivo Black',sans-serif;
+  --sans:'Archivo',system-ui,sans-serif;
+  --serif:'Instrument Serif',Georgia,serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bone);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;scroll-behavior:smooth}
+::selection{background:var(--red);color:var(--bone)}
+
+/* CURSOR */
+@media(hover:hover)and(pointer:fine){html,body,a,button,*{cursor:none!important}}
+.cursor-ring{position:fixed;top:0;left:0;width:36px;height:36px;border:1.5px solid var(--ink);border-radius:50%;pointer-events:none;z-index:10000;will-change:transform;transition:width .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1),border-color .2s,background-color .2s,opacity .2s;mix-blend-mode:difference;background:transparent}
+.cursor-ring::before,.cursor-ring::after{content:"";position:absolute;background:var(--bone);transition:all .25s}
+.cursor-ring::before{top:50%;left:-6px;right:-6px;height:1px;transform:translateY(-50%)}
+.cursor-ring::after{left:50%;top:-6px;bottom:-6px;width:1px;transform:translateX(-50%)}
+.cursor-dot{position:fixed;top:0;left:0;width:6px;height:6px;background:var(--red);border-radius:0;pointer-events:none;z-index:10001;will-change:transform;transition:width .18s,height .18s,background-color .18s,opacity .2s}
+.cursor-ring.is-hover{width:88px;height:88px;border-color:var(--red);border-width:1.5px;mix-blend-mode:normal;background:rgba(211,60,45,.06)}
+.cursor-ring.is-hover::before,.cursor-ring.is-hover::after{background:var(--red)}
+.cursor-ring.is-hover::before{left:-12px;right:-12px}
+.cursor-ring.is-hover::after{top:-12px;bottom:-12px}
+.cursor-dot.is-hover{width:0;height:0;opacity:0}
+.cursor-ring.is-click{width:20px;height:20px;border-color:var(--red);mix-blend-mode:normal}
+.cursor-label{position:absolute;top:100%;left:50%;transform:translateX(-50%)translateY(16px);font-family:var(--mono);font-size:9px;letter-spacing:.22em;color:var(--red);text-transform:uppercase;white-space:nowrap;opacity:0;transition:opacity .25s;font-weight:500;padding:3px 8px;background:var(--bone);border:1px solid var(--red)}
+.cursor-ring.is-hover .cursor-label{opacity:1;transition-delay:.05s}
+@media(hover:none),(pointer:coarse){.cursor-ring,.cursor-dot{display:none}html,body,*{cursor:auto!important}}
+
+/* PAPER TEXTURE */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1000;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0.063  0 0 0 0 0.059  0 0 0 0 0.055  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.45'/></svg>");opacity:.35;mix-blend-mode:multiply}
+
+/* TICKER */
+.ticker-bar{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--ink);color:var(--bone);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:8px 0;overflow:hidden}
+.ticker-track{display:flex;gap:52px;white-space:nowrap;animation:tick 60s linear infinite;width:max-content}
+.ticker-track span{display:inline-flex;align-items:center;gap:14px}
+.ticker-track span::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* NAV */
+nav{position:fixed;top:34px;left:0;right:0;z-index:90;display:flex;justify-content:space-between;align-items:center;padding:18px 40px;background:rgba(249,248,240,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.logo{font-family:var(--brand);font-size:38px;letter-spacing:-.01em;display:inline-flex;align-items:baseline;line-height:.85;font-weight:400;text-decoration:none;color:var(--ink)}
+.logo .dot{display:inline-block;width:9px;height:9px;background:var(--red);margin-left:4px;transform:translateY(-1px)}
+.nav-links{display:flex;gap:36px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+.nav-links a{color:var(--ink);text-decoration:none;position:relative;padding:6px 0;transition:color .2s}
+.nav-links a:hover{color:var(--red)}
+.nav-links a .num{color:var(--grey);margin-right:8px;font-size:10px}
+.nav-cta{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;background:var(--ink);color:var(--bone);border:none;padding:12px 20px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .2s;font-weight:500;text-decoration:none}
+.nav-cta:hover{background:var(--red);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.nav-cta .sq{display:inline-block;width:6px;height:6px;background:var(--red)}
+.nav-cta:hover .sq{background:var(--bone)}
+
+/* CASE HERO */
+.case-hero{padding:clamp(120px,14vh,160px) clamp(20px,3vw,48px) 80px;border-bottom:2px solid var(--ink);position:relative;overflow:hidden}
+.case-hero::after{content:"01";position:absolute;right:-20px;bottom:-60px;font-family:var(--display);font-size:clamp(280px,30vw,500px);color:rgba(16,15,14,.04);line-height:.8;pointer-events:none;font-weight:400;letter-spacing:-.02em}
+.case-breadcrumb{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:48px;display:flex;align-items:center;gap:12px}
+.case-breadcrumb a{color:var(--ink-dim);text-decoration:none;transition:color .2s}
+.case-breadcrumb a:hover{color:var(--red)}
+.case-breadcrumb .sep{color:var(--red)}
+.case-hero-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:64px;align-items:end}
+.case-hero-title h1{font-family:var(--display);font-weight:400;font-size:clamp(56px,8vw,130px);line-height:.92;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:24px}
+.case-hero-title h1 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em}
+.case-hero-title h1 .red{color:var(--red)}
+.case-hero-subtitle{font-family:var(--serif);font-size:clamp(18px,2vw,26px);line-height:1.35;color:var(--ink-dim);max-width:600px}
+.case-hero-subtitle em{color:var(--red);font-weight:400}
+.case-hero-meta{display:flex;flex-direction:column;gap:20px}
+.case-hero-meta .meta-item{padding-bottom:16px;border-bottom:1px solid var(--line-soft)}
+.case-hero-meta .meta-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.case-hero-meta .meta-label::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+.case-hero-meta .meta-value{font-family:var(--display);font-weight:400;font-size:28px;letter-spacing:-.005em;text-transform:uppercase;line-height:1}
+.case-hero-meta .meta-value .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none}
+.case-hero-meta .meta-value .red{color:var(--red)}
+
+/* STATS BAND */
+.case-stats{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid var(--ink);background:var(--ink);color:var(--bone)}
+.case-stat{padding:48px 36px;border-right:1px solid rgba(249,248,240,.08);text-align:center}
+.case-stat:last-child{border-right:none}
+.case-stat-num{font-family:var(--display);font-weight:400;font-size:clamp(56px,6vw,88px);line-height:.9;margin-bottom:8px;letter-spacing:-.01em}
+.case-stat-num .red{color:var(--red)}
+.case-stat-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--grey)}
+
+/* CASE BODY */
+.case-body{max-width:920px;margin:0 auto;padding:100px clamp(20px,3vw,48px)}
+.case-body h2{font-family:var(--display);font-weight:400;font-size:clamp(40px,5vw,72px);line-height:.92;text-transform:uppercase;letter-spacing:-.005em;margin-bottom:32px}
+.case-body h2 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em}
+.case-body h2 .red{color:var(--red)}
+.case-body h3{font-family:var(--display);font-weight:400;font-size:clamp(24px,3vw,36px);line-height:.95;text-transform:uppercase;margin-bottom:20px;margin-top:56px;letter-spacing:-.005em}
+.case-body h3 .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none}
+.case-body p{font-size:16px;line-height:1.75;color:var(--ink-dim);margin-bottom:24px;max-width:720px}
+.case-body p strong{color:var(--ink);font-weight:600}
+.case-body p em{color:var(--red);font-style:normal;font-weight:500}
+
+.case-section{padding-bottom:80px;margin-bottom:80px;border-bottom:1px solid var(--line-soft)}
+.case-section:last-child{border-bottom:none;margin-bottom:0}
+
+/* QUOTE BLOCK */
+.case-quote{border-left:4px solid var(--red);padding:32px 0 32px 36px;margin:48px 0}
+.case-quote blockquote{font-family:var(--serif);font-size:clamp(22px,2.4vw,32px);line-height:1.3;font-weight:400}
+.case-quote blockquote em{color:var(--red);font-style:italic}
+.case-quote .quote-author{margin-top:20px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+
+/* STACK LIST */
+.stack-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:36px 0 48px}
+.stack-card{border:1px solid var(--ink);padding:24px;position:relative;transition:all .3s;cursor:default}
+.stack-card:hover{background:var(--cream);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.stack-card .stack-name{font-family:var(--display);font-weight:400;font-size:28px;text-transform:uppercase;line-height:1;margin-bottom:8px;letter-spacing:-.005em}
+.stack-card .stack-role{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+
+/* TIMELINE */
+.timeline{margin:48px 0;position:relative}
+.timeline::before{content:"";position:absolute;left:20px;top:0;bottom:0;width:1px;background:var(--line-soft)}
+.timeline-item{padding-left:56px;margin-bottom:36px;position:relative}
+.timeline-item::before{content:"";position:absolute;left:14px;top:6px;width:13px;height:13px;border:2px solid var(--red);background:var(--bone)}
+.timeline-item:last-child::before{background:var(--red)}
+.timeline-week{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--red);margin-bottom:6px;font-weight:500}
+.timeline-desc{font-size:15px;line-height:1.65;color:var(--ink-dim)}
+.timeline-desc strong{color:var(--ink);font-weight:600}
+
+/* BEFORE / AFTER */
+.before-after{display:grid;grid-template-columns:1fr auto 1fr;gap:0;margin:48px 0;border:1px solid var(--ink)}
+.ba-col{padding:32px}
+.ba-col.before{background:var(--cream)}
+.ba-col.after{background:var(--ink);color:var(--bone)}
+.ba-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.ba-label::before{content:"";display:inline-block;width:6px;height:6px;background:var(--red)}
+.ba-col.before .ba-label{color:var(--ink-dim)}
+.ba-col.after .ba-label{color:var(--grey)}
+.ba-list{list-style:none}
+.ba-list li{font-size:14px;line-height:1.7;padding:6px 0;border-bottom:1px solid var(--line-soft);display:flex;align-items:baseline;gap:10px}
+.ba-col.after .ba-list li{border-color:rgba(249,248,240,.08)}
+.ba-list li::before{content:"×";font-family:var(--mono);font-size:12px;color:var(--red);flex-shrink:0}
+.ba-col.after .ba-list li::before{content:"✓";color:var(--red)}
+.ba-divider{width:48px;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:28px;color:var(--bone);writing-mode:vertical-lr}
+
+/* NEXT CASE */
+.next-case{border-top:2px solid var(--ink);padding:80px 48px;display:grid;grid-template-columns:auto 1fr auto;gap:48px;align-items:center;transition:background .35s;cursor:pointer;text-decoration:none;color:var(--ink)}
+.next-case:hover{background:var(--cream)}
+.next-case-label{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)}
+.next-case-title{font-family:var(--display);font-weight:400;font-size:clamp(36px,5vw,72px);text-transform:uppercase;line-height:.92;letter-spacing:-.005em}
+.next-case-title .serif{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em;color:var(--red)}
+.next-case-arrow{font-size:48px;color:var(--red);transition:transform .3s}
+.next-case:hover .next-case-arrow{transform:translateX(10px)}
+
+/* FOOTER */
+footer{padding:18px 40px;display:flex;justify-content:space-between;align-items:center;gap:24px;background:var(--bone);border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.footer-brand{font-family:var(--brand);font-size:28px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;display:inline-flex;align-items:baseline;font-weight:400}
+.footer-brand .dot{display:inline-block;width:7px;height:7px;background:var(--red);margin-left:3px;transform:translateY(-1px)}
+.footer-contact{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap}
+.footer-contact a{color:var(--ink);text-decoration:none;transition:color .2s}
+.footer-contact a:hover{color:var(--red)}
+.footer-contact .sep{opacity:.4}
+.footer-bottom{padding:10px 40px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--ink-dim);text-transform:uppercase;background:var(--bone)}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  nav{padding:12px 18px;top:28px}
+  .logo{font-size:28px}
+  .nav-links{display:none}
+  .nav-cta{padding:9px 14px;font-size:10px}
+  .case-hero{padding:104px 20px 48px}
+  .case-hero-grid{grid-template-columns:1fr;gap:32px}
+  .case-hero-title h1{font-size:clamp(52px,11vw,84px)}
+  .case-hero-meta{flex-direction:row;flex-wrap:wrap;gap:16px}
+  .case-hero-meta .meta-item{flex:1;min-width:140px}
+  .case-stats{grid-template-columns:repeat(2,1fr)}
+  .case-stat{border-bottom:1px solid rgba(249,248,240,.08)}
+  .case-body{padding:60px 20px}
+  .stack-grid{grid-template-columns:1fr}
+  .before-after{grid-template-columns:1fr}
+  .ba-divider{width:100%;height:40px;writing-mode:horizontal-tb}
+  .next-case{grid-template-columns:1fr;padding:48px 20px;gap:16px;text-align:center}
+  .next-case-title{font-size:clamp(28px,8vw,48px)}
+  footer{padding:14px 20px;gap:12px;justify-content:center;text-align:center}
+  .footer-brand{font-size:22px}
+  .footer-contact{font-size:10px;gap:10px;justify-content:center}
+  .footer-bottom{gap:8px;padding:10px 20px;font-size:9px;text-align:center;justify-content:center}
+}
+@media(max-width:480px){
+  .case-hero{padding:92px 16px 36px}
+  .case-hero-title h1{font-size:clamp(44px,13vw,64px)}
+  .case-stats{grid-template-columns:1fr}
+  .case-stat{padding:32px 24px}
+  .case-body h2{font-size:clamp(32px,8vw,48px)}
+  .stack-grid{grid-template-columns:1fr}
+  footer{gap:10px;padding:12px 16px}
+  .footer-brand{font-size:20px}
+  .footer-contact{font-size:9.5px;gap:8px}
+}
+
+/* LANG TOGGLE */
+.lang-btn{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;background:transparent;color:var(--ink);border:1.5px solid var(--ink);padding:8px 14px;cursor:pointer;transition:all .2s;font-weight:600;margin-left:12px;line-height:1}
+.lang-btn:hover{background:var(--ink);color:var(--bone)}
+@media(max-width:900px){.lang-btn{padding:7px 10px;font-size:10px;margin-left:8px}}
+
+/* SCROLL HINT */
+.scroll-hint{display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 0;cursor:pointer;text-decoration:none;color:var(--ink-dim);transition:color .2s}
+.scroll-hint:hover{color:var(--red)}
+.scroll-hint-text{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.scroll-hint-arrow{font-size:24px;animation:scrollBounce 2s ease-in-out infinite;color:var(--red)}
+@keyframes scrollBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div class="cursor-ring" id="cursorRing"><span class="cursor-label" id="cursorLabel">◉ SOLVR</span></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<!-- TICKER -->
+<div class="ticker-bar">
+  <div class="ticker-track">
+    <span data-es="Caso 01">Case Study 01</span><span>Northbeam</span><span data-es="Automatización de Onboarding">Onboarding Automation</span><span data-es="38 hrs/sem ahorradas">38 hrs/wk saved</span><span data-es="+27% activación">+27% activation</span><span>n8n · Postgres · Slack</span>
+    <span data-es="Caso 01">Case Study 01</span><span>Northbeam</span><span data-es="Automatización de Onboarding">Onboarding Automation</span><span data-es="38 hrs/sem ahorradas">38 hrs/wk saved</span><span data-es="+27% activación">+27% activation</span><span>n8n · Postgres · Slack</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="solvr-portfolio (1).html" class="logo">SOLVR<span class="dot"></span></a>
+  <div class="nav-links">
+    <a href="solvr-portfolio (1).html#work" data-es="<span class='num'>01</span>Trabajo"><span class="num">01</span>Work</a>
+    <a href="solvr-portfolio (1).html#services" data-es="<span class='num'>02</span>Servicios"><span class="num">02</span>Services</a>
+    <a href="solvr-portfolio (1).html#process" data-es="<span class='num'>03</span>Proceso"><span class="num">03</span>Process</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:0">
+    <a href="solvr-portfolio (1).html#contact" class="nav-cta" data-es="<span class='sq'></span> Iniciar Proyecto <span>→</span>"><span class="sq"></span> Start a Project <span>→</span></a>
+    <button class="lang-btn" id="langToggle" aria-label="Cambiar a Español">ES</button>
+  </div>
+</nav>
+
+<!-- CASE HERO -->
+<section class="case-hero">
+  <div class="case-breadcrumb">
+    <a href="solvr-portfolio (1).html">SOLVR.</a>
+    <span class="sep">→</span>
+    <a href="solvr-portfolio (1).html#work" data-es="Trabajo">Work</a>
+    <span class="sep">→</span>
+    <span data-es="Caso 01">Case 01</span>
+  </div>
+  <div class="case-hero-grid">
+    <div class="case-hero-title">
+      <h1 data-es="Reemplazó un <span class='serif'>onboarding</span> de 14 pasos con un webhook<span class='red'>.</span>">Replaced a 14-step <span class="serif">onboarding</span> with one webhook<span class="red">.</span></h1>
+      <div class="case-hero-subtitle" data-es="Northbeam necesitaba que su flujo de activación de clientes dejara de desangrar tiempo. Convertimos <em>catorce traspasos manuales</em> en un solo pipeline silencioso.">Northbeam needed their customer activation flow to stop hemorrhaging time. We turned <em>fourteen manual handoffs</em> into a single, silent pipeline.</div>
+    </div>
+    <div class="case-hero-meta">
+      <div class="meta-item">
+        <div class="meta-label" data-es="Cliente">Client</div>
+        <div class="meta-value">Northbeam</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Sector</div>
+        <div class="meta-value"><span class="serif">Series B SaaS</span></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label" data-es="Ubicación">Location</div>
+        <div class="meta-value"><span class="serif">USA</span></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Stack</div>
+        <div class="meta-value">n8n · Postgres · Slack</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label" data-es="Plazo">Timeline</div>
+        <div class="meta-value" data-es="6 <span class='serif'>semanas</span>">6 <span class="serif">weeks</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCROLL HINT -->
+<a href="#case-body" class="scroll-hint" data-es="<span class='scroll-hint-text'>Leer más</span><span class='scroll-hint-arrow'>↓</span>">
+  <span class="scroll-hint-text">Read more</span>
+  <span class="scroll-hint-arrow">↓</span>
+</a>
+
+<!-- STATS BAND -->
+<section class="case-stats">
+  <div class="case-stat">
+    <div class="case-stat-num"><span class="red">38</span> hrs</div>
+    <div class="case-stat-label" data-es="Ahorro por semana">Saved per week</div>
+  </div>
+  <div class="case-stat">
+    <div class="case-stat-num">+27<span class="red">%</span></div>
+    <div class="case-stat-label" data-es="Aumento en activación">Activation lift</div>
+  </div>
+  <div class="case-stat">
+    <div class="case-stat-num">14 → <span class="red">1</span></div>
+    <div class="case-stat-label" data-es="Pasos reducidos">Steps reduced</div>
+  </div>
+  <div class="case-stat">
+    <div class="case-stat-num"><span class="red">&lt;2</span> min</div>
+    <div class="case-stat-label" data-es="Tiempo total">End-to-end time</div>
+  </div>
+</section>
+
+<!-- CASE BODY -->
+<div class="case-body" id="case-body">
+
+  <!-- THE PROBLEM -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>problema</span><span class='red'>.</span>">The <span class="serif">problem</span><span class="red">.</span></h2>
+    <p data-es="Northbeam es una plataforma de inteligencia de marketing confiada por marcas de e-commerce en rápido crecimiento. Su producto era sólido — pero su onboarding de clientes se sostenía con <em>DMs de Slack, hojas de cálculo y pura voluntad</em>.">Northbeam is a marketing intelligence platform trusted by fast-scaling e-commerce brands. Their product was solid — but their customer onboarding was held together by <em>Slack DMs, spreadsheets, and sheer willpower</em>.</p>
+    <p data-es="Cada nueva cuenta requería <strong>catorce pasos manuales discretos</strong> repartidos en tres equipos: Ventas tenía que notificar a CS, CS tenía que provisionar cuentas en el dashboard, Ingeniería tenía que configurar claves API, y alguien — quien fuera — tenía que recordar enviar el email de bienvenida.">Every new account required <strong>fourteen discrete manual steps</strong> spread across three teams: Sales had to notify CS, CS had to provision accounts in the dashboard, Engineering had to configure API keys, and someone — anyone — had to remember to send the welcome email.</p>
+    <p data-es="Los tratos que cerraban el viernes no se onboardeaban hasta el miércoles. Los clientes abandonaban antes de ver valor. El equipo de ops gastaba <strong>38 horas por semana</strong> solo en logística de onboarding — no en soportar clientes, no en mejorar el producto, solo en mover datos de un lugar a otro.">Deals that closed on Friday didn't get onboarded until Wednesday. Customers were churning before they ever saw value. The ops team was spending <strong>38 hours a week</strong> just on onboarding logistics — not on supporting customers, not on improving the product, just on moving data from one place to another.</p>
+
+    <div class="case-quote">
+      <blockquote data-es="&quot;Teníamos una página de Notion titulada <em>'Pasos de Onboarding (NO OLVIDAR #7)'</em> — eso te dice todo lo que necesitas saber sobre dónde estábamos.&quot;">"We had a Notion page titled <em>'Onboarding Steps (DO NOT FORGET #7)'</em> — that tells you everything you need to know about where we were."</blockquote>
+      <div class="quote-author" data-es="— VP de Customer Success, Northbeam">— VP of Customer Success, Northbeam</div>
+    </div>
+  </div>
+
+  <!-- BEFORE / AFTER -->
+  <div class="case-section">
+    <h2 data-es="Antes <span class='red'>&</span> <span class='serif'>después</span><span class='red'>.</span>">Before <span class="red">&</span> <span class="serif">after</span><span class="red">.</span></h2>
+    <div class="before-after">
+      <div class="ba-col before">
+        <div class="ba-label" data-es="Antes de SOLVR">Before SOLVR</div>
+        <ul class="ba-list">
+          <li data-es="14 pasos manuales entre 3 equipos">14 manual steps across 3 teams</li>
+          <li data-es="3-5 días hábiles para onboardear">3-5 business days to onboard</li>
+          <li data-es="DMs de Slack como fuente de verdad">Slack DMs as the source of truth</li>
+          <li data-es="Emails de bienvenida enviados manual (a menudo olvidados)">Welcome emails sent manually (often forgotten)</li>
+          <li data-es="Sin visibilidad del estado de onboarding">No visibility into onboarding status</li>
+          <li data-es="38 hrs/sem del equipo de ops">38 hrs/wk of ops team time</li>
+        </ul>
+      </div>
+      <div class="ba-divider">→</div>
+      <div class="ba-col after">
+        <div class="ba-label" data-es="Después de SOLVR">After SOLVR</div>
+        <ul class="ba-list">
+          <li data-es="Un solo webhook dispara todo el provisioning">Single webhook triggers all provisioning</li>
+          <li data-es="Menos de 2 minutos de punta a punta">Under 2 minutes end-to-end</li>
+          <li data-es="Postgres como fuente única de verdad">Postgres as the single source of truth</li>
+          <li data-es="Secuencia de bienvenida automatizada con personalización">Automated welcome sequence with personalization</li>
+          <li data-es="Tracking en tiempo real en Slack + dashboard">Real-time Slack + dashboard tracking</li>
+          <li data-es="0 hrs/sem — totalmente autónomo">0 hrs/wk — fully autonomous</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE APPROACH -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>enfoque</span><span class='red'>.</span>">The <span class="serif">approach</span><span class="red">.</span></h2>
+    <p data-es="Empezamos con una auditoría embebida de 2 semanas. Nos sentamos en cada sync de onboarding, acompañamos al equipo de CS, y mapeamos el ciclo completo de una cuenta nueva — desde contrato firmado hasta primer login al dashboard.">We started with a 2-week embedded audit. We sat in every onboarding sync, shadowed the CS team, and mapped the full lifecycle of a new account — from signed contract to first dashboard login.</p>
+    <p data-es="La arquitectura que diseñamos fue brutalmente simple: <strong>un solo webhook de Stripe</strong> se dispara cuando una suscripción se activa. Ese evento activa un workflow en n8n que maneja todo lo demás — provisioning de cuenta, generación de API keys, updates de CRM, emails de bienvenida, notificaciones de Slack, y un check de activación a las 72 horas.">The architecture we designed was brutally simple: <strong>a single Stripe webhook</strong> fires when a subscription becomes active. That event triggers an n8n workflow that handles everything downstream — account provisioning, API key generation, CRM updates, welcome emails, Slack notifications, and a 72-hour activation check.</p>
+
+    <h3 data-es="Cronología de <span class='serif'>entrega</span>">Delivery <span class="serif">timeline</span></h3>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semanas 1–2 / Mapear">Weeks 1–2 / Map</div>
+        <div class="timeline-desc" data-es="Embebidos con los equipos de CS e Ingeniería. Documentamos los 14 traspasos manuales. Identificamos el <strong>evento de suscripción de Stripe</strong> como el único trigger confiable.">Embedded with the CS and Engineering teams. Documented all 14 manual handoffs. Identified the <strong>Stripe subscription event</strong> as the single reliable trigger point.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semana 3 / Diseño">Week 3 / Design</div>
+        <div class="timeline-desc" data-es="Arquitectamos el pipeline: webhook → orquestación en n8n → provisioning en Postgres → notificaciones Slack → secuencias de email. <strong>Cero código backend custom.</strong>">Architected the pipeline: webhook → n8n orchestration → Postgres provisioning → Slack notifications → email sequences. <strong>Zero custom backend code.</strong></div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semanas 4–5 / Construcción">Weeks 4–5 / Build</div>
+        <div class="timeline-desc" data-es="Construimos el workflow en n8n con <strong>manejo de errores, lógica de reintentos y dead-letter queues</strong>. Probamos contra cuentas de test de Stripe. Corrimos 200+ onboards simulados.">Built the n8n workflow with <strong>error handling, retry logic, and dead-letter queues</strong>. Staged against test Stripe accounts. Ran 200+ simulated onboards.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-week" data-es="Semana 6 / Deploy + Monitor">Week 6 / Ship + Monitor</div>
+        <div class="timeline-desc" data-es="Deploy a producción. Corrió en paralelo con el proceso manual 5 días. <strong>Cero discrepancias.</strong> Apagamos el proceso viejo el día 6.">Deployed to production. Ran parallel with manual process for 5 days. <strong>Zero discrepancies.</strong> Killed the old process on day 6.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE STACK -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>stack</span><span class='red'>.</span>">The <span class="serif">stack</span><span class="red">.</span></h2>
+    <p data-es="Elegimos herramientas que el equipo de Northbeam pudiera mantener solo. Sin dependencias exóticas, sin vendor lock-in.">We chose tools that Northbeam's team could maintain independently. No exotic dependencies, no vendor lock-in.</p>
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="stack-name">n8n</div>
+        <div class="stack-role" data-es="Motor de orquestación">Orchestration engine</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Postgres</div>
+        <div class="stack-role" data-es="Provisioning de cuentas + estado">Account provisioning + state</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Stripe</div>
+        <div class="stack-role" data-es="Fuente del webhook trigger">Webhook trigger source</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Slack</div>
+        <div class="stack-role" data-es="Notificaciones de equipo + alertas">Team notifications + alerts</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">Resend</div>
+        <div class="stack-role" data-es="Entrega de email transaccional">Transactional email delivery</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-name">HubSpot</div>
+        <div class="stack-role" data-es="Sync de ciclo de vida en CRM">CRM lifecycle sync</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE RESULT -->
+  <div class="case-section">
+    <h2 data-es="El <span class='serif'>resultado</span><span class='red'>.</span>">The <span class="serif">result</span><span class="red">.</span></h2>
+    <p data-es="En el primer mes de deploy, Northbeam vio un <strong>aumento de 27% en las tasas de activación</strong> — los clientes veían valor el día uno en lugar del día cinco. El equipo de CS recuperó 38 horas por semana, que redirigieron a gestión proactiva de cuentas.">Within the first month of deployment, Northbeam saw a <strong>27% lift in activation rates</strong> — customers were seeing value on day one instead of day five. The CS team reclaimed 38 hours per week, which they redirected into proactive account management.</p>
+    <p data-es="El pipeline ha procesado más de <strong>1,400 onboards</strong> sin un solo paso perdido. Tiempo mediano desde pago a primer login al dashboard: <em>94 segundos</em>.">The pipeline has processed over <strong>1,400 onboards</strong> without a single missed step. Median time from payment to first dashboard login: <em>94 seconds</em>.</p>
+
+    <div class="case-quote">
+      <blockquote data-es="&quot;La gente se registra a las 2am y están onboardeados antes del amanecer. Ni sabíamos que eso era posible con nuestro stack.&quot;">"People sign up at 2am and they're onboarded before the sun comes up. We didn't even know that was possible with our stack."</blockquote>
+      <div class="quote-author" data-es="— Head of Engineering, Northbeam">— Head of Engineering, Northbeam</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- NEXT CASE -->
+<a href="case-study-02.html" class="next-case">
+  <div class="next-case-label" data-es="Siguiente Caso → 02">Next Case → 02</div>
+  <div class="next-case-title" data-es="Un agente IA que <span class='serif'>clasifica</span> 200 emails al día.">An AI agent that <span class="serif">triages</span> 200 emails a day.</div>
+  <div class="next-case-arrow">→</div>
+</a>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">SOLVR<span class="dot"></span></div>
+  <div class="footer-contact">
+    <a href="mailto:contact@solvr.cloud">contact@solvr.cloud</a>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/company/solvr" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <span data-es="Ciudad de México">Mexico City</span>
+  </div>
+</footer>
+<div class="footer-bottom">
+  <span data-es="© 2026 SOLVR.">© 2026 SOLVR.</span>
+</div>
+
+<script>
+(function(){
+  if(window.matchMedia('(hover:none),(pointer:coarse)').matches) return;
+  const ring=document.getElementById('cursorRing'),dot=document.getElementById('cursorDot'),label=document.getElementById('cursorLabel');
+  if(!ring||!dot) return;
+  let mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  window.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.transform=`translate(${mx}px,${my}px)translate(-50%,-50%)`});
+  (function loop(){rx+=(mx-rx)*.18;ry+=(my-ry)*.18;ring.style.transform=`translate(${rx}px,${ry}px)translate(-50%,-50%)`;requestAnimationFrame(loop)})();
+  [{sel:'a,button,.nav-cta',label:'◉ CLICK'},{sel:'.stack-card',label:'◉ STACK'},{sel:'.case-stat',label:'◉ DATA'},{sel:'blockquote',label:'◉ QUOTE'}].forEach(({sel,label:t})=>{
+    document.querySelectorAll(sel).forEach(el=>{
+      el.addEventListener('mouseenter',()=>{ring.classList.add('is-hover');dot.classList.add('is-hover');label.textContent=t});
+      el.addEventListener('mouseleave',()=>{ring.classList.remove('is-hover');dot.classList.remove('is-hover')});
+    });
+  });
+  window.addEventListener('mousedown',()=>ring.classList.add('is-click'));
+  window.addEventListener('mouseup',()=>ring.classList.remove('is-click'));
+  window.addEventListener('mouseleave',()=>{ring.style.opacity='0';dot.style.opacity='0'});
+  window.addEventListener('mouseenter',()=>{ring.style.opacity='1';dot.style.opacity='1'});
+})();
+</script>
+<script src="anim.js"></script>
+<script src="lang.js"></script>
+</body>
+</html>
