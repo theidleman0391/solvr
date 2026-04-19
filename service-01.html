@@ -212,8 +212,8 @@ footer{padding:18px 40px;display:flex;justify-content:space-between;align-items:
     <circle class="flow-dot d3" cx="620" cy="80" r="4"/>
 
     <!-- Middle: Solvr pipeline -->
-    <rect class="flow-node" x="260" y="190" width="300" height="50" rx="2" stroke-dasharray="4 4"/>
-    <text class="flow-label" x="410" y="222" text-anchor="middle" data-es="Pipeline SOLVR">SOLVR Pipeline</text>
+    <rect class="flow-node" x="250" y="190" width="300" height="50" rx="2" stroke-dasharray="4 4"/>
+    <text class="flow-label" x="400" y="222" text-anchor="middle" data-es="Pipeline SOLVR">SOLVR Pipeline</text>
 
     <!-- Bottom nodes -->
     <rect class="flow-node" x="60" y="300" width="160" height="70" rx="2"/>
@@ -227,16 +227,16 @@ footer{padding:18px 40px;display:flex;justify-content:space-between;align-items:
     <text class="flow-label" x="680" y="340" text-anchor="middle">Slack</text>
 
     <!-- Connecting pulse lines -->
-    <path class="flow-pulse" d="M 140 130 L 140 190 L 410 190 L 410 190"/>
+    <path class="flow-pulse" d="M 140 130 L 140 190 L 400 190"/>
     <path class="flow-pulse" d="M 400 130 L 400 190"/>
-    <path class="flow-pulse" d="M 680 130 L 680 190 L 410 190"/>
-    <path class="flow-pulse" d="M 410 240 L 140 300"/>
-    <path class="flow-pulse" d="M 410 240 L 400 300"/>
-    <path class="flow-pulse" d="M 410 240 L 680 300"/>
+    <path class="flow-pulse" d="M 680 130 L 680 190 L 400 190"/>
+    <path class="flow-pulse" d="M 400 240 L 140 300"/>
+    <path class="flow-pulse" d="M 400 240 L 400 300"/>
+    <path class="flow-pulse" d="M 400 240 L 680 300"/>
 
     <!-- Moving packets -->
     <rect class="flow-packet" width="10" height="10" x="-5" y="-5">
-      <animateMotion dur="3.2s" repeatCount="indefinite" path="M 140 130 L 140 190 L 410 190" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1"/>
+      <animateMotion dur="3.2s" repeatCount="indefinite" path="M 140 130 L 140 190 L 400 190" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1"/>
       <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.2s" repeatCount="indefinite" />
     </rect>
     <rect class="flow-packet" width="10" height="10" x="-5" y="-5">
@@ -244,19 +244,19 @@ footer{padding:18px 40px;display:flex;justify-content:space-between;align-items:
       <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.5s" repeatCount="indefinite" begin="0.5s"/>
     </rect>
     <rect class="flow-packet" width="10" height="10" x="-5" y="-5">
-      <animateMotion dur="3.4s" repeatCount="indefinite" path="M 680 130 L 680 190 L 410 190" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" begin="1.2s"/>
+      <animateMotion dur="3.4s" repeatCount="indefinite" path="M 680 130 L 680 190 L 400 190" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" begin="1.2s"/>
       <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.4s" repeatCount="indefinite" begin="1.2s"/>
     </rect>
     <rect class="flow-packet" width="10" height="10" x="-5" y="-5">
-      <animateMotion dur="3s" repeatCount="indefinite" path="M 410 240 L 140 300" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" begin="0.8s"/>
+      <animateMotion dur="3s" repeatCount="indefinite" path="M 400 240 L 140 300" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" begin="0.8s"/>
       <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3s" repeatCount="indefinite" begin="0.8s"/>
     </rect>
     <rect class="flow-packet" width="10" height="10" x="-5" y="-5">
-      <animateMotion dur="3.1s" repeatCount="indefinite" path="M 410 240 L 400 300" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" begin="1.8s"/>
+      <animateMotion dur="3.1s" repeatCount="indefinite" path="M 400 240 L 400 300" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" begin="1.8s"/>
       <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.1s" repeatCount="indefinite" begin="1.8s"/>
     </rect>
     <rect class="flow-packet" width="10" height="10" x="-5" y="-5">
-      <animateMotion dur="3.3s" repeatCount="indefinite" path="M 410 240 L 680 300" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" begin="0.2s"/>
+      <animateMotion dur="3.3s" repeatCount="indefinite" path="M 400 240 L 680 300" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" begin="0.2s"/>
       <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.3s" repeatCount="indefinite" begin="0.2s"/>
     </rect>
   </svg>
