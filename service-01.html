@@ -72,10 +72,6 @@ nav{position:fixed;top:34px;left:0;right:0;z-index:90;display:flex;justify-conte
 .flow-dot.d4{animation-delay:.9s}
 @keyframes flowBlink{0%,100%{opacity:.25}50%{opacity:1}}
 .flow-packet{fill:var(--red)}
-@keyframes pkt1{0%{transform:translate(140px,90px)}50%{transform:translate(400px,90px)}100%{transform:translate(400px,200px)}}
-@keyframes pkt2{0%{transform:translate(400px,200px)}50%{transform:translate(140px,310px)}100%{transform:translate(680px,310px)}}
-.packet-a{animation:pkt1 4s cubic-bezier(.65,0,.35,1) infinite}
-.packet-b{animation:pkt2 4s cubic-bezier(.65,0,.35,1) infinite;animation-delay:-2s}
 
 /* BODY SECTIONS */
 .svc-body{padding:100px clamp(20px,3vw,48px);max-width:1280px;margin:0 auto}
@@ -239,8 +235,30 @@ footer{padding:18px 40px;display:flex;justify-content:space-between;align-items:
     <path class="flow-pulse" d="M 410 240 L 680 300"/>
 
     <!-- Moving packets -->
-    <rect class="flow-packet packet-a" width="10" height="10" x="-5" y="-5"/>
-    <rect class="flow-packet packet-b" width="10" height="10" x="-5" y="-5"/>
+    <rect class="flow-packet" width="10" height="10" x="-5" y="-5">
+      <animateMotion dur="3.2s" repeatCount="indefinite" path="M 140 130 L 140 190 L 410 190" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1"/>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.2s" repeatCount="indefinite" />
+    </rect>
+    <rect class="flow-packet" width="10" height="10" x="-5" y="-5">
+      <animateMotion dur="3.5s" repeatCount="indefinite" path="M 400 130 L 400 190" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" begin="0.5s"/>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.5s" repeatCount="indefinite" begin="0.5s"/>
+    </rect>
+    <rect class="flow-packet" width="10" height="10" x="-5" y="-5">
+      <animateMotion dur="3.4s" repeatCount="indefinite" path="M 680 130 L 680 190 L 410 190" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" begin="1.2s"/>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.4s" repeatCount="indefinite" begin="1.2s"/>
+    </rect>
+    <rect class="flow-packet" width="10" height="10" x="-5" y="-5">
+      <animateMotion dur="3s" repeatCount="indefinite" path="M 410 240 L 140 300" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" begin="0.8s"/>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3s" repeatCount="indefinite" begin="0.8s"/>
+    </rect>
+    <rect class="flow-packet" width="10" height="10" x="-5" y="-5">
+      <animateMotion dur="3.1s" repeatCount="indefinite" path="M 410 240 L 400 300" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" begin="1.8s"/>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.1s" repeatCount="indefinite" begin="1.8s"/>
+    </rect>
+    <rect class="flow-packet" width="10" height="10" x="-5" y="-5">
+      <animateMotion dur="3.3s" repeatCount="indefinite" path="M 410 240 L 680 300" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" begin="0.2s"/>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.3s" repeatCount="indefinite" begin="0.2s"/>
+    </rect>
   </svg>
 </div>
 
