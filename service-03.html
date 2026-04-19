@@ -81,6 +81,24 @@ nav{position:fixed;top:34px;left:0;right:0;z-index:90;display:flex;justify-conte
 .chart-bar:nth-child(6){animation-delay:1s}
 @keyframes barGrow{0%{opacity:.15;transform:scaleY(.7)}100%{opacity:.5;transform:scaleY(1)}}
 
+.db-packet{fill:var(--red)}
+@keyframes p_in1 { 0%{transform:translate(180px,67px);opacity:0} 10%{opacity:1} 28%{transform:translate(240px,67px)} 76%{transform:translate(240px,170px)} 90%{opacity:1} 100%{transform:translate(290px,170px);opacity:0} }
+@keyframes p_in2 { 0%{transform:translate(180px,147px);opacity:0} 10%{opacity:1} 56%{transform:translate(255px,147px)} 74%{transform:translate(255px,170px)} 90%{opacity:1} 100%{transform:translate(290px,170px);opacity:0} }
+@keyframes p_in3 { 0%{transform:translate(180px,227px);opacity:0} 10%{opacity:1} 45%{transform:translate(255px,227px)} 79%{transform:translate(255px,170px)} 90%{opacity:1} 100%{transform:translate(290px,170px);opacity:0} }
+@keyframes p_in4 { 0%{transform:translate(180px,307px);opacity:0} 10%{opacity:1} 24%{transform:translate(240px,307px)} 80%{transform:translate(240px,170px)} 90%{opacity:1} 100%{transform:translate(290px,170px);opacity:0} }
+@keyframes p_out1 { 0%{transform:translate(510px,170px);opacity:0} 10%{opacity:1} 24%{transform:translate(570px,170px)} 72%{transform:translate(570px,67px)} 90%{opacity:1} 100%{transform:translate(620px,67px);opacity:0} }
+@keyframes p_out2 { 0%{transform:translate(510px,170px);opacity:0} 10%{opacity:1} 28%{transform:translate(545px,170px)} 39%{transform:translate(545px,157px)} 90%{opacity:1} 100%{transform:translate(620px,157px);opacity:0} }
+@keyframes p_out3 { 0%{transform:translate(510px,170px);opacity:0} 10%{opacity:1} 19%{transform:translate(545px,170px)} 60%{transform:translate(545px,247px)} 90%{opacity:1} 100%{transform:translate(620px,247px);opacity:0} }
+@keyframes p_out4 { 0%{transform:translate(510px,170px);opacity:0} 10%{opacity:1} 18%{transform:translate(570px,170px)} 78%{transform:translate(570px,337px)} 90%{opacity:1} 100%{transform:translate(620px,337px);opacity:0} }
+.pkt-in1 { animation: p_in1 2.5s cubic-bezier(.4,0,.2,1) infinite; }
+.pkt-in2 { animation: p_in2 3s cubic-bezier(.4,0,.2,1) infinite; animation-delay: -1s; }
+.pkt-in3 { animation: p_in3 2.8s cubic-bezier(.4,0,.2,1) infinite; animation-delay: -2s; }
+.pkt-in4 { animation: p_in4 3.2s cubic-bezier(.4,0,.2,1) infinite; animation-delay: -1.5s; }
+.pkt-out1 { animation: p_out1 3s cubic-bezier(.4,0,.2,1) infinite; animation-delay: -0.5s; }
+.pkt-out2 { animation: p_out2 2.6s cubic-bezier(.4,0,.2,1) infinite; animation-delay: -1.5s; }
+.pkt-out3 { animation: p_out3 2.9s cubic-bezier(.4,0,.2,1) infinite; animation-delay: -2.2s; }
+.pkt-out4 { animation: p_out4 3.5s cubic-bezier(.4,0,.2,1) infinite; animation-delay: -1s; }
+
 /* BODY SECTIONS */
 .svc-body{padding:100px clamp(20px,3vw,48px);max-width:1280px;margin:0 auto}
 .section-head{display:grid;grid-template-columns:200px 1fr;gap:48px;align-items:baseline;margin-bottom:56px}
@@ -226,10 +244,10 @@ footer{padding:18px 40px;display:flex;justify-content:space-between;align-items:
     <text class="db-label light" x="400" y="178" text-anchor="middle" data-es="Capa de transformación">Transform layer</text>
 
     <!-- Pulse lines from sources to hub -->
-    <path class="db-pulse" d="M 180 67 L 290 170"/>
-    <path class="db-pulse" d="M 180 147 L 290 170"/>
-    <path class="db-pulse" d="M 180 227 L 290 170"/>
-    <path class="db-pulse" d="M 180 307 L 290 170"/>
+    <path class="db-pulse" d="M 180 67 L 240 67 L 240 170 L 290 170"/>
+    <path class="db-pulse" d="M 180 147 L 255 147 L 255 170 L 290 170"/>
+    <path class="db-pulse" d="M 180 227 L 255 227 L 255 170 L 290 170"/>
+    <path class="db-pulse" d="M 180 307 L 240 307 L 240 170 L 290 170"/>
 
     <!-- Dashboard outputs on the right -->
     <rect class="db-node accent" x="620" y="40" width="160" height="55" rx="2"/>
@@ -245,10 +263,20 @@ footer{padding:18px 40px;display:flex;justify-content:space-between;align-items:
     <text class="db-label" x="700" y="342" text-anchor="middle" data-es="Alertas">Alerts</text>
 
     <!-- Pulse lines from hub to dashboards -->
-    <path class="db-pulse" d="M 510 170 L 620 67"/>
-    <path class="db-pulse" d="M 510 170 L 620 157"/>
-    <path class="db-pulse" d="M 510 170 L 620 247"/>
-    <path class="db-pulse" d="M 510 170 L 620 337"/>
+    <path class="db-pulse" d="M 510 170 L 570 170 L 570 67 L 620 67"/>
+    <path class="db-pulse" d="M 510 170 L 545 170 L 545 157 L 620 157"/>
+    <path class="db-pulse" d="M 510 170 L 545 170 L 545 247 L 620 247"/>
+    <path class="db-pulse" d="M 510 170 L 570 170 L 570 337 L 620 337"/>
+
+    <!-- Moving packets -->
+    <rect class="db-packet pkt-in1" width="10" height="10" x="-5" y="-5"/>
+    <rect class="db-packet pkt-in2" width="10" height="10" x="-5" y="-5"/>
+    <rect class="db-packet pkt-in3" width="10" height="10" x="-5" y="-5"/>
+    <rect class="db-packet pkt-in4" width="10" height="10" x="-5" y="-5"/>
+    <rect class="db-packet pkt-out1" width="10" height="10" x="-5" y="-5"/>
+    <rect class="db-packet pkt-out2" width="10" height="10" x="-5" y="-5"/>
+    <rect class="db-packet pkt-out3" width="10" height="10" x="-5" y="-5"/>
+    <rect class="db-packet pkt-out4" width="10" height="10" x="-5" y="-5"/>
 
     <!-- Mini bar chart in hub -->
     <rect class="chart-bar" x="320" y="156" width="12" height="28" rx="1" style="transform-origin:320px 184px"/>
